@@ -6,12 +6,12 @@ const rand = crypto.randomBytes
 import blake from 'blakejs'
 const curve = EC('secp256k1').curve;
 
-let ergo_schnorr = {};
+let ergo_schnorr = {}
 
 ergo_schnorr.num_hash = function num_hash(s){
     const KEY = null
     const OUTPUT_LENGTH = 32
-    const context = blake.blake2bInit(OUTPUT_LENGTH, KEY)
+    let context = blake.blake2bInit(OUTPUT_LENGTH, KEY)
     blake.blake2bUpdate(context, new Buffer.from(s))
     let h = blake.blake2bFinal(context)
     return new BN(h.slice(0,24));
@@ -53,7 +53,7 @@ export function sign(msg_bytes, sk){
     return sig;
 }
 
-ergo_schnorr.verify = function verify(msg_bytes, sig_bytes, pk_bytes){
+export function verify(msg_bytes, sig_bytes, pk_bytes){
     if(sig_bytes.length != 56)
         throw new Error;
     let c = new BN(sig_bytes.slice(0,24));
