@@ -29,7 +29,7 @@ ergo_schnorr.try_to_sign = function try_to_sign(msg_bytes, sk){
     // crucial: y has to remain secret and be removed ASAP
     // it also should come from a good entropy source
     if(y.isZero())
-        throw new Error;
+        return null
 
     let w = Buffer.from(curve.g.mul(y).encodeCompressed());
     let pk = Buffer.from(curve.g.mul(sk).encodeCompressed());
@@ -37,7 +37,7 @@ ergo_schnorr.try_to_sign = function try_to_sign(msg_bytes, sk){
     let s = Buffer.concat([commitment, msg_bytes]);
     let c = ergo_schnorr.num_hash(s);
     if(c.isZero())
-        throw new Error;
+        return null
 
     let z = sk.mul(c).add(y).umod(curve.n);
     let cb = Buffer.from(c.toArray('big', 24));

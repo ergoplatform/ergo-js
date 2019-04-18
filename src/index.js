@@ -3,10 +3,10 @@ import BN from 'bn.js'
 import blake from 'blakejs'
 import bs58 from 'bs58'
 
-
 export function walletFromPK(pk, test_net = false) {
   // pk - string
   // test_net - boolean
+
   let NETWORK_TYPE
   const P2PK_TYPE = 1
 
@@ -26,9 +26,9 @@ export function sendTransaction(msg, sk) {
   //sk - string
 
   const msg_bytes = Buffer.from(JSON.stringify(msg), 'utf8');
-  const skBig = new BN(Buffer.from(sk, 'hex').join(''));
+  const skBig = new BN(sk);
   const sign_bytes = sign(msg_bytes, skBig);
-
+  
   return sign_bytes.toString('hex')
 }
 
