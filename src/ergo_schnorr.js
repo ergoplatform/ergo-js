@@ -38,7 +38,6 @@ ergo_schnorr.try_to_sign = function try_to_sign(msg_bytes, sk){
     let c = ergo_schnorr.num_hash(s);
     if(c.isZero())
         return null
-
     let z = sk.mul(c).add(y).umod(curve.n);
     let cb = Buffer.from(c.toArray('big', 24));
     let zb = Buffer.from(z.toArray('big', 32));
