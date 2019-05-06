@@ -1,5 +1,5 @@
-import { walletFromPK } from './index'
-import { sign, verify } from './ergo_schnorr'
+import { walletFromPK } from '../src/index'
+import { sign, verify } from '../src/ergo_schnorr'
 import BN from 'bn.js'
 
 test('P2PK wallet in test network test vector', () => {
