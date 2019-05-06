@@ -192,7 +192,9 @@ export function sendWithoutBoxId(recipient, amount, fee, sk) {
         }
       }
     })
-    .catch((res) => { console.log(res); });
+    .catch((res) => {
+      console.log(res);
+    });
 }
 
 export function sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height) {
@@ -214,6 +216,10 @@ export function sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddr
       method: 'POST',
       body: JSON.stringify(signedTransaction),
     })
-    .then((res) => { console.log(res); })
-    .catch((res) => { console.log(res); });
+  .then((res) => {
+    console.log(res);
+  })
+  .catch((res) => {
+    console.log(res);
+  });
 }

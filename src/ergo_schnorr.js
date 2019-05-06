@@ -30,14 +30,18 @@ ergo_schnorr.try_to_sign = function try_to_sign(msg_bytes, sk) {
 
   // crucial: y has to remain secret and be removed ASAP
   // it also should come from a good entropy source
-  if (y.isZero()) { return null; }
+  if (y.isZero()) {
+    return null;
+  }
 
   const w = Buffer.from(curve.g.mul(y).encodeCompressed());
   const pk = Buffer.from(curve.g.mul(sk).encodeCompressed());
   const commitment = ergo_schnorr.gen_commitment(pk, w);
   const s = Buffer.concat([commitment, msg_bytes]);
   const c = ergo_schnorr.num_hash(s);
-  if (c.isZero()) { return null; }
+  if (c.isZero()) {
+    return null;
+  }
   const z = sk.mul(c).add(y).umod(curve.n);
   const cb = Buffer.from(c.toArray('big', 24));
   const zb = Buffer.from(z.toArray('big', 32));
@@ -48,13 +52,16 @@ ergo_schnorr.try_to_sign = function try_to_sign(msg_bytes, sk) {
 export function sign(msg_bytes, sk) {
   let sig = ergo_schnorr.try_to_sign(msg_bytes, sk);
 
-  do { sig = ergo_schnorr.try_to_sign(msg_bytes, sk); }
-  while (!sig);
+  while (!sig) {
+    sig = ergo_schnorr.try_to_sign(msg_bytes, sk);
+  }
   return sig;
-}
+  }
 
 export function verify(msg_bytes, sig_bytes, pk_bytes) {
-  if (sig_bytes.length !== 56) { throw new Error(); }
+  if (sig_bytes.length !== 56) {
+    throw new Error();
+  }
   const c = new BN(sig_bytes.slice(0, 24));
   const z = new BN(sig_bytes.slice(24, 56));
   const pk = curve.decodePoint(pk_bytes);
