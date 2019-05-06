@@ -8,15 +8,25 @@ import { sign } from './ergo_schnorr';
 const EC = elliptic.ec;
 const { curve } = EC('secp256k1');
 
+/**
+ * Pk from wallet
+ *
+ * @param  {number} ergoAdress
+ */
+
 export function pkFromWallet(ergoAdress) {
   const adrBytes = bs58.decode(ergoAdress);
   return adrBytes.slice(1, 34);
 }
 
-export function walletFromPK(pk, testNet = false) {
-  // pk - string
-  // test_net - boolean
+/**
+ * Wallet from PK
+ *
+ * @param  {string} pk
+ * @param  {boolean} testNet
+ */
 
+export function walletFromPK(pk, testNet = false) {
   let NETWORK_TYPE;
   const P2PK_TYPE = 1;
 
@@ -31,13 +41,20 @@ export function walletFromPK(pk, testNet = false) {
   return bs58.encode(address);
 }
 
-function walletFromSK(sk, test_net = false) {
+/**
+ * Wallet from SK
+ *
+ * @param  {string} sk
+ * @param  {boolean} testNet
+ */
+
+function walletFromSK(sk, testNet = false) {
   const pk = Buffer.from(curve.g.mul(sk).encodeCompressed());
-  return walletFromPK(pk, test_net);
+  return walletFromPK(pk, testNet);
 }
 
-function intToVlq(param) {
-  let x = param;
+function intToVlq(num) {
+  let x = num;
   let res = Buffer.from([]);
   let r;
   while (parseInt(x / (2 ** 7))) {
@@ -134,6 +151,7 @@ export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddr
     value: amount,
     creationHeight: height,
   });
+
   unsignedTransaction.outputs.push({
     ergoTree: chargeAddressErgoTree,
     assets: [],
@@ -141,6 +159,7 @@ export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddr
     value: globalAmount - amount - fee,
     creationHeight: height,
   });
+
   unsignedTransaction.outputs.push({
     ergoTree: minerErgoTree,
     assets: [],
@@ -196,12 +215,18 @@ export function sendWithoutBoxId(recipient, amount, fee, sk) {
     });
 }
 
-export function sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height) {
-  // recipient - String
-  // amount - Number
-  // fee - Number
-  // boxesToSpend - { id, amount, sk }
+/**
+ * Send transaction
+ *
+ * @param  {String} recipient
+ * @param  {Number} amount
+ * @param  {Number} fee
+ * @param  {Object} boxesToSpend
+ * @param  {String} chargeAddress
+ * @param  {Number} height
+ */
 
+export function sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height) {
   const signedTransaction = formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height);
 
   const sendTransactionURL = constants.url;
