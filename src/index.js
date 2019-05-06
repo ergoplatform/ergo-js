@@ -9,24 +9,24 @@ const EC = elliptic.ec;
 const { curve } = EC('secp256k1');
 
 export function pkFromWallet(ergoAdress) {
-  const adr_bytes = bs58.decode(ergoAdress);
-  return adr_bytes.slice(1, 34);
+  const adrBytes = bs58.decode(ergoAdress);
+  return adrBytes.slice(1, 34);
 }
 
-export function walletFromPK(pk, test_net = false) {
+export function walletFromPK(pk, testNet = false) {
   // pk - string
   // test_net - boolean
 
   let NETWORK_TYPE;
   const P2PK_TYPE = 1;
 
-  if (test_net) NETWORK_TYPE = 16;
+  if (testNet) NETWORK_TYPE = 16;
   else NETWORK_TYPE = 0;
 
-  const prefix_byte = new Buffer.from([NETWORK_TYPE + P2PK_TYPE]);
-  const content_bytes = new Buffer.from(pk, 'hex');
-  const checksum = Buffer.from(blake.blake2b(Buffer.concat([prefix_byte, content_bytes]), null, 32), 'hex');
-  const address = Buffer.concat([prefix_byte, content_bytes, checksum]).slice(0, 38);
+  const prefixByte = Buffer.from([NETWORK_TYPE + P2PK_TYPE]);
+  const contentBytes = Buffer.from(pk, 'hex');
+  const checksum = Buffer.from(blake.blake2b(Buffer.concat([prefixByte, contentBytes]), null, 32), 'hex');
+  const address = Buffer.concat([prefixByte, contentBytes, checksum]).slice(0, 38);
 
   return bs58.encode(address);
 }
@@ -36,13 +36,13 @@ function walletFromSK(sk, test_net = false) {
   return walletFromPK(pk, test_net);
 }
 
-function int_to_vlq(param) {
+function intToVlq(param) {
   let x = param;
-  let res = new Buffer([]);
+  let res = Buffer.from([]);
   let r;
-  while (parseInt(x / 2 ** 7)) {
+  while (parseInt(x / (2 ** 7))) {
     r = x & 0x7F;
-    x = parseInt(x / 2 ** 7);
+    x = parseInt(x / (2 ** 7));
     res = Buffer.concat([res, Buffer.from([(r | 0x80)], null, 1)]);
   }
   r = (x & 0x7F);
@@ -50,100 +50,99 @@ function int_to_vlq(param) {
   return res;
 }
 
-function output_bytes(out) {
-  let res = int_to_vlq(out.value);
+function outputBytes(out) {
+  let res = intToVlq(out.value);
   res = Buffer.concat([res, Buffer.from(out.ergoTree, 'hex')]);
-  res = Buffer.concat([res, int_to_vlq(out.creationHeight)]);
+  res = Buffer.concat([res, intToVlq(out.creationHeight)]);
 
-  res = Buffer.concat([res, int_to_vlq(out.assets.length)]);
+  res = Buffer.concat([res, intToVlq(out.assets.length)]);
   const k = out.additionalRegisters.length;
-  res = Buffer.concat([res, int_to_vlq(k)]);
+  res = Buffer.concat([res, intToVlq(k)]);
   return res;
 }
 
-function value_serialize(val) {
+function valueSerialize(val) {
   return '';
 }
 
-function input_bytes(i) {
+function inputBytes(i) {
   let res = Buffer.from(i.boxId, 'hex');
   const sp = i.spendingProof;
-  res = Buffer.concat([res, int_to_vlq(sp.proofBytes.length)]);
+  res = Buffer.concat([res, intToVlq(sp.proofBytes.length)]);
   res = Buffer.concat([res, Buffer.from(sp.proofBytes, 'hex')]);
-  res = Buffer.concat([res, int_to_vlq(sp.extension.length)]);
+  res = Buffer.concat([res, intToVlq(sp.extension.length)]);
   for (const k in sp.extension) {
-    res += int_to_vlq(k);
-    res += value_serialize(sp.extension[k]);
+    res += intToVlq(k);
+    res += valueSerialize(sp.extension[k]);
   }
   return res;
 }
 
-function distinct_token_list(outputs) {
+function distinctTokenList(outputs) {
   // TODO: rework this
   return [];
 }
 
-function serialize_tx(tx) {
-  let res = int_to_vlq(tx.inputs.length);
-  for (var key in tx.inputs) {
-    res = Buffer.concat([res, input_bytes(tx.inputs[key])]);
+function serializeTx(tx) {
+  let res = intToVlq(tx.inputs.length);
+  for (const key in tx.inputs) {
+    res = Buffer.concat([res, inputBytes(tx.inputs[key])]);
   }
-  res = Buffer.concat([res, int_to_vlq(tx.dataInputs.length)]);
+  res = Buffer.concat([res, intToVlq(tx.dataInputs.length)]);
 
   for (const i in tx.dataInputs) {
     res = Buffer.concat([res, Buffer.from(i.boxId, 'hex')]);
   }
 
-  const distinct_ids = distinct_token_list(tx.outputs);
+  const distinctIds = distinctTokenList(tx.outputs);
 
-  res = Buffer.concat([res, int_to_vlq(distinct_ids.length)]);
-  for (const d in distinct_ids) {
-    res = Buffer.concat([res, Buffer.from(distinct_ids[d], 'hex')]);
+  res = Buffer.concat([res, intToVlq(distinctIds.length)]);
+
+  for (const d in distinctIds) {
+    res = Buffer.concat([res, Buffer.from(distinctIds[d], 'hex')]);
   }
-  res = Buffer.concat([res, int_to_vlq(tx.outputs.length)]);
-  for (var key in tx.outputs) {
-    res = Buffer.concat([res, output_bytes(tx.outputs[key])]);
+
+  res = Buffer.concat([res, intToVlq(tx.outputs.length)]);
+  for (const key in tx.outputs) {
+    res = Buffer.concat([res, outputBytes(tx.outputs[key])]);
   }
   return res;
 }
 
 export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height) {
   const unsignedTransaction = {
-    inputs: [
-    ],
-    dataInputs: [
-    ],
-    outputs: [
-    ],
+    inputs: [],
+    dataInputs: [],
+    outputs: [],
   };
 
-  const ergoTree_bytes = new Buffer([0x00, 0x08, 0xcd]);
+  const ergoTreeBytes = Buffer.from([0x00, 0x08, 0xcd]);
 
-  const recipient_ergoTree_bytes = Buffer.concat([ergoTree_bytes, pkFromWallet(recipient)]);
-  const recipient_ergoTree = recipient_ergoTree_bytes.toString('hex');
+  const recipientErgoTreeBytes = Buffer.concat([ergoTreeBytes, pkFromWallet(recipient)]);
+  const recipientErgoTree = recipientErgoTreeBytes.toString('hex');
 
-  const chargeAddress_ergoTree_bytes = Buffer.concat([ergoTree_bytes, pkFromWallet(chargeAddress)]);
-  const chargeAddress_ergoTree = chargeAddress_ergoTree_bytes.toString('hex');
+  const chargeAddressErgoTreeBytes = Buffer.concat([ergoTreeBytes, pkFromWallet(chargeAddress)]);
+  const chargeAddressErgoTree = chargeAddressErgoTreeBytes.toString('hex');
 
-  const miner_ergoTree = constants.minerTree;
+  const minerErgoTree = constants.minerTree;
   const globalAmount = boxesToSpend.reduce((sum, box) => sum + box.amount, 0);
 
   unsignedTransaction.outputs.push({
-    ergoTree: recipient_ergoTree,
+    ergoTree: recipientErgoTree,
     assets: [],
     additionalRegisters: {},
     value: amount,
     creationHeight: height,
   });
   unsignedTransaction.outputs.push({
-    ergoTree: chargeAddress_ergoTree,
+    ergoTree: chargeAddressErgoTree,
     assets: [],
     additionalRegisters: {},
     value: globalAmount - amount - fee,
     creationHeight: height,
   });
   unsignedTransaction.outputs.push({
-    ergoTree: miner_ergoTree,
+    ergoTree: minerErgoTree,
     assets: [],
     additionalRegisters: {},
     value: fee,
@@ -162,8 +161,8 @@ export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddr
 
   const signedTransaction = Object.assign({}, unsignedTransaction);
   signedTransaction.inputs.forEach((input, ind) => {
-    const sign_bytes = sign(serialize_tx(unsignedTransaction), new BN(boxesToSpend[ind].sk, 16));
-    input.spendingProof.proofBytes = sign_bytes.toString('hex');
+    const signBytes = sign(serializeTx(unsignedTransaction), new BN(boxesToSpend[ind].sk, 16));
+    input.spendingProof.proofBytes = signBytes.toString('hex');
   });
   return signedTransaction;
 }
@@ -180,7 +179,7 @@ export function sendWithoutBoxId(recipient, amount, fee, sk) {
     })
     .then(res => res.json())
     .then((json) => {
-      for (const [index, box] of json.entries()) {
+      for (const [, box] of json.entries()) {
         if (box.value >= amount + fee) {
           const b = {
             id: box.id,

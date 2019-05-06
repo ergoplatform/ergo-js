@@ -44,3 +44,5 @@ rules:
 plugins:
   # https://github.com/babel/eslint-plugin-babel
   - babel
+  - jest
+  - no-for-of-loops
