@@ -9,7 +9,7 @@ const EC = elliptic.ec;
 const { curve } = EC('secp256k1');
 
 /**
- * Pk from wallet
+ * Get public key from wallet
  *
  * @param  {number} ergoAdress
  */
@@ -20,7 +20,7 @@ export function pkFromWallet(ergoAdress) {
 }
 
 /**
- * Wallet from PK
+ * Get wallet from public key
  *
  * @param  {string} pk
  * @param  {boolean} testNet
@@ -42,7 +42,7 @@ export function walletFromPK(pk, testNet = false) {
 }
 
 /**
- * Wallet from SK
+ * Get wallet from secret key
  *
  * @param  {string} sk
  * @param  {boolean} testNet
@@ -216,7 +216,7 @@ export function sendWithoutBoxId(recipient, amount, fee, sk) {
 }
 
 /**
- * Send transaction
+ * Send transaction to address
  *
  * @param  {String} recipient
  * @param  {Number} amount
