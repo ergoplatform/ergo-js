@@ -10,7 +10,7 @@ import in body
 
 # Usage
 
-## Default send transaction
+### Default send transaction
 
 ```
 * @param  Wallet address{String} recipient
@@ -23,7 +23,7 @@ import in body
 ergo.sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height)
 ```
 
-## Send transaction only with sk
+### Send transaction only with sk
 
 ```
 * @param  Wallet address{string} recipient
@@ -34,7 +34,7 @@ ergo.sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height
 ergo.sendWithoutBoxId(recipient, amount, fee, sk) 
 ```
 
-## Form transaction and returns it
+### Form transaction and returns it
 
 ```
 * @param  Wallet address{String} recipient
@@ -47,7 +47,7 @@ ergo.sendWithoutBoxId(recipient, amount, fee, sk)
 ergo.formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height)
 ```
 
-## Generate wallet address from public key
+### Generate wallet address from public key
 
 ```
 * @param  {string} pk
@@ -56,7 +56,7 @@ ergo.formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height
 ergo.walletFromPK(pk, test_net)
 ```
 
-## Generate wallet address from private key
+### Generate wallet address from private key
 
 ```
 * @param  {string} sk
