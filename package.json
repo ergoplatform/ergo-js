@@ -2,11 +2,12 @@
   "name": "ergo-js",
   "version": "1.0.0",
   "description": "",
-  "main": "webpack.config.js",
+  "main": "dist/ergo.js",
   "devDependencies": {
     "@babel/cli": "^7.4.4",
     "@babel/core": "^7.4.4",
     "@babel/node": "^7.2.2",
+    "@babel/plugin-transform-async-to-generator": "^7.4.4",
     "@babel/preset-env": "^7.4.4",
     "babel-eslint": "^10.0.1",
     "babel-jest": "^24.7.1",
@@ -41,5 +42,9 @@
     "test": "jest"
   },
   "author": "",
-  "license": "ISC"
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ergoplatform/ergo-js/issues"
+  },
+  "homepage": "https://github.com/ergoplatform/ergo-js"
 }

@@ -8,56 +8,73 @@ import in body
 <script src='path_to/ergo.js'></script>
 ```
 
-## Usage
+# Usage
 
-Default send transaction
+## Default send transaction
 
 ```
+* @param  Wallet address{String} recipient
+* @param  {Number} amount
+* @param  {Number} fee
+* @param  {Array[object]} boxesToSpend
+* @param  WalletAddress{String} chargeAddress
+* @param  {Number} height
+
 ergo.sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height)
 ```
 
-* recipient - Wallet address
-* amount - Int
-* fee - Int
-* boxesToSpend - Array ({id, amount, sk(hex)})
-* chargeAddress - Wallet address
-* height - Int
-
-Send transaction only with sk
+## Send transaction only with sk
 
 ```
+* @param  Wallet address{string} recipient
+* @param  {number} amount
+* @param  {number} fee
+* @param  {string} sk
+
 ergo.sendWithoutBoxId(recipient, amount, fee, sk) 
 ```
 
-* recipient - Wallet address
-* amount - Int
-* fee - Int
-* sk - hex
-
-Form transaction and returns it
+## Form transaction and returns it
 
 ```
+* @param  Wallet address{String} recipient
+* @param  {Number} amount
+* @param  {Number} fee
+* @param  {Array[object({ id: number, amount: number, sk(hex): string })]} boxesToSpend
+* @param  {String} chargeAddress
+* @param  {Number} height
+
 ergo.formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height)
 ```
 
-* recipient - Wallet address
-* amount - Int
-* fee - Int
-* boxesToSpend - Array ({id, amount, sk(hex)})
-* chargeAddress - Wallet address
-* height - Int
-
-Generate wallet address from pk
+## Generate wallet address from public key
 
 ```
+* @param  {string} pk
+* @param  {boolean} testNet
+
 ergo.walletFromPK(pk, test_net)
 ```
 
-* pk - hex
-* test_net - is testnet? Default - false
+## Generate wallet address from public key
 
+```
+* @param  {string} pk
+* @param  {boolean} testNet
 
-## Running the tests
+ergo.walletFromPK(pk, test_net)
+```
+
+## Generate wallet address from privaty key
+
+```
+* @param  {string} sk
+* @param  {boolean} testNet
+
+ergo.walletFromSK(pk, test_net)
+```
+
+# Running the tests
 
 ```
 npm test

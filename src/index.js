@@ -2,11 +2,26 @@ import BN from 'bn.js';
 import blake from 'blakejs';
 import bs58 from 'bs58';
 import elliptic from 'elliptic';
+import url from 'url';
 import constants from './constants';
 import { sign } from './ergo_schnorr';
 
 const EC = elliptic.ec;
 const { curve } = EC('secp256k1');
+
+export async function getCurrentHeight() {
+  const { total } = await fetch(
+    url.resolve(constants.testnet_url, '/blocks?limit=1'),
+    {
+      headers: {
+        Accept: 'application/json',
+      },
+      method: 'GET',
+    }
+  ).then(res => res.json());
+
+  return total;
+}
 
 /**
  * Get public key from wallet
@@ -48,7 +63,7 @@ export function walletFromPK(pk, testNet = false) {
  * @param  {boolean} testNet
  */
 
-function walletFromSK(sk, testNet = false) {
+export function walletFromSK(sk, testNet = false) {
   const pk = Buffer.from(curve.g.mul(sk).encodeCompressed());
   return walletFromPK(pk, testNet);
 }
@@ -126,6 +141,15 @@ function serializeTx(tx) {
   return res;
 }
 
+/**
+ * @param  {String} recipient
+ * @param  {Number} amount
+ * @param  {Number} fee
+ * @param  {Array[object]} boxesToSpend
+ * @param  {String} chargeAddress
+ * @param  {Number} height
+ */
+
 export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height) {
   const unsignedTransaction = {
     inputs: [],
@@ -179,15 +203,25 @@ export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddr
   });
 
   const signedTransaction = Object.assign({}, unsignedTransaction);
+  const serialize = serializeTx(unsignedTransaction);
   signedTransaction.inputs.forEach((input, ind) => {
-    const signBytes = sign(serializeTx(unsignedTransaction), new BN(boxesToSpend[ind].sk, 16));
+    const signBytes = sign(serialize, new BN(boxesToSpend[ind].sk, 16));
+
     input.spendingProof.proofBytes = signBytes.toString('hex');
   });
   return signedTransaction;
 }
 
-export function sendWithoutBoxId(recipient, amount, fee, sk) {
+/**
+ * @param  {string} recipient
+ * @param  {number} amount
+ * @param  {number} fee
+ * @param  {string} sk
+ */
+
+export async function sendWithoutBoxId(recipient, amount, fee, sk) {
   const wallet = walletFromSK(sk, true);
+  const height = await getCurrentHeight();
 
   fetch(constants.unspent_url + wallet,
     {
@@ -197,17 +231,40 @@ export function sendWithoutBoxId(recipient, amount, fee, sk) {
       method: 'GET',
     })
     .then(res => res.json())
-    .then((json) => {
-      for (const [, box] of json.entries()) {
-        if (box.value >= amount + fee) {
-          const b = {
-            id: box.id,
-            amount: box.value,
-            sk,
-          };
-          sendTransaction(recipient, amount, fee, [b], wallet, 1);
-          break;
+    .then((data) => {
+      const resBox = data.filter(x => x.value >= Number(amount) + Number(fee))[0];
+
+      const boxesSort = (boxes) => {
+        const sortableKeys = Object.keys(boxes).sort((a, b) => boxes[b].value - boxes[a].value);
+
+        return sortableKeys;
+      };
+
+      if (resBox.length === 0) {
+        let initValue = 0;
+        const initBoxes = [];
+        for (const key of boxesSort(data)) {
+          initValue += data[key].value;
+          initBoxes.push(data[key]);
+
+          if (initValue >= Number(amount) + Number(fee)) {
+            const b = initBoxes.map(box => ({ id: box.id, amount: box.value, sk }));
+            sendTransaction(recipient, amount, fee, b, wallet, height);
+            break;
+          }
         }
+
+        if (initValue < Number(amount) + Number(fee)) {
+          throw new Error('Insufficient funds');
+        }
+      } else {
+        const b = {
+          id: resBox.id,
+          amount: resBox.value,
+          sk,
+        };
+
+        sendTransaction(recipient, amount, fee, [b], wallet, height);
       }
     })
     .catch((res) => {
@@ -221,7 +278,7 @@ export function sendWithoutBoxId(recipient, amount, fee, sk) {
  * @param  {String} recipient
  * @param  {Number} amount
  * @param  {Number} fee
- * @param  {Object} boxesToSpend
+ * @param  {Array[object]} boxesToSpend
  * @param  {String} chargeAddress
  * @param  {Number} height
  */
