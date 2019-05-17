@@ -212,6 +212,57 @@ export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddr
   return signedTransaction;
 }
 
+export function createTransaction(boxesToSpend, outputs, fee, height) {
+    const unsignedTransaction = {
+        inputs: [],
+        dataInputs: [],
+        outputs: [],
+    };
+
+    const ergoTreeBytes = Buffer.from([0x00, 0x08, 0xcd]);
+    const minerErgoTree = constants.minerTree;
+
+    for (let i in outputs) {
+        let address = outputs[i].address;
+        let tree = Buffer.concat([ergoTreeBytes, pkFromWallet(address)]).toString('hex');
+
+        unsignedTransaction.outputs.push({
+            ergoTree: tree,
+            assets: [],
+            additionalRegisters: {},
+            value: outputs[i].amount,
+            creationHeight: height,
+        });
+    }
+
+    if (fee) {
+        unsignedTransaction.outputs.push({
+            ergoTree: minerErgoTree,
+            assets: [],
+            additionalRegisters: {},
+            value: fee,
+            creationHeight: height,
+        });
+    }
+
+    boxesToSpend.forEach((box) => {
+        unsignedTransaction.inputs.push({
+            boxId: box.id,
+            spendingProof: {
+                proofBytes: '',
+                extension: {},
+            },
+        });
+    });
+
+    const signedTransaction = Object.assign({}, unsignedTransaction);
+    signedTransaction.inputs.forEach((input, ind) => {
+        const signBytes = sign(serializeTx(unsignedTransaction), new BN(boxesToSpend[ind].sk, 16));
+        input.spendingProof.proofBytes = signBytes.toString('hex');
+    });
+    return signedTransaction;
+}
+
 /**
  * @param  {string} recipient
  * @param  {number} amount
