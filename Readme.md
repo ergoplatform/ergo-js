@@ -56,16 +56,7 @@ ergo.formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height
 ergo.walletFromPK(pk, test_net)
 ```
 
-## Generate wallet address from public key
-
-```
-* @param  {string} pk
-* @param  {boolean} testNet
-
-ergo.walletFromPK(pk, test_net)
-```
-
-## Generate wallet address from privaty key
+## Generate wallet address from private key
 
 ```
 * @param  {string} sk
