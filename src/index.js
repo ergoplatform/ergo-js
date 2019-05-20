@@ -196,7 +196,7 @@ export function createTransaction(boxesToSpend, outputs, fee, height) {
     });
   }
 
-  if (fee) {
+  if (fee !== null && fee !== undefined) {
     unsignedTransaction.outputs.push({
       ergoTree: minerErgoTree,
       assets: [],
