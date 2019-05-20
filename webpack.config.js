@@ -1,10 +1,24 @@
 const path = require('path');
 
-module.exports = {
+const buildFile = Object.assign({}, {
   entry: './src/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'ergo.js',
     library: 'ergo',
   },
-};
+});
+
+const npmFile = Object.assign({}, {
+  entry: './src/index.js',
+  output: {
+    path: path.resolve(__dirname, './'),
+    filename: 'index.js',
+    library: 'ergo',
+  },
+});
+
+// Return Array of Configurations
+module.exports = [
+  buildFile, npmFile,
+];
