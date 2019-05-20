@@ -1,8 +1,8 @@
 {
-  "name": "ergo-js",
+  "name": "@ergoplatform/ergo-js",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/ergo.js",
+  "main": "./dist/ergo.js",
   "dependencies": {
     "bn.js": "^4.11.8",
     "bs58": "^4.0.1",
