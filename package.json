@@ -1,8 +1,15 @@
 {
   "name": "@ergoplatform/ergo-js",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
-  "main": "./dist/ergo.js",
+  "main": "dist/ergo.js",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": "https://github.com/ergoplatform/ergo-js",
   "dependencies": {
     "bn.js": "^4.11.8",
     "bs58": "^4.0.1",
