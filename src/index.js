@@ -151,6 +151,29 @@ function serializeTx(tx) {
  */
 
 export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height) {
+  const globalAmount = boxesToSpend.reduce((sum, box) => sum + box.amount, 0);
+  const outputs = [
+    {
+      address: recipient,
+      amount,
+    },
+    {
+      address: chargeAddress,
+      amount: globalAmount - amount - fee,
+    },
+  ];
+
+  return createTransaction(boxesToSpend, outputs, fee, height);
+}
+
+/**
+ * @param  {Array[object]} boxesToSpend
+ * @param  {Array} outputs
+ * @param  {Number} fee
+ * @param  {Number} height
+ */
+
+export function createTransaction(boxesToSpend, outputs, fee, height) {
   const unsignedTransaction = {
     inputs: [],
     dataInputs: [],
@@ -158,39 +181,30 @@ export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddr
   };
 
   const ergoTreeBytes = Buffer.from([0x00, 0x08, 0xcd]);
-
-  const recipientErgoTreeBytes = Buffer.concat([ergoTreeBytes, pkFromWallet(recipient)]);
-  const recipientErgoTree = recipientErgoTreeBytes.toString('hex');
-
-  const chargeAddressErgoTreeBytes = Buffer.concat([ergoTreeBytes, pkFromWallet(chargeAddress)]);
-  const chargeAddressErgoTree = chargeAddressErgoTreeBytes.toString('hex');
-
   const minerErgoTree = constants.minerTree;
-  const globalAmount = boxesToSpend.reduce((sum, box) => sum + box.amount, 0);
 
-  unsignedTransaction.outputs.push({
-    ergoTree: recipientErgoTree,
-    assets: [],
-    additionalRegisters: {},
-    value: amount,
-    creationHeight: height,
-  });
+  for (const i in outputs) {
+    const { address, amount } = outputs[i];
+    const tree = Buffer.concat([ergoTreeBytes, pkFromWallet(address)]).toString('hex');
 
-  unsignedTransaction.outputs.push({
-    ergoTree: chargeAddressErgoTree,
-    assets: [],
-    additionalRegisters: {},
-    value: globalAmount - amount - fee,
-    creationHeight: height,
-  });
+    unsignedTransaction.outputs.push({
+      ergoTree: tree,
+      assets: [],
+      additionalRegisters: {},
+      value: amount,
+      creationHeight: height,
+    });
+  }
 
-  unsignedTransaction.outputs.push({
-    ergoTree: minerErgoTree,
-    assets: [],
-    additionalRegisters: {},
-    value: fee,
-    creationHeight: height,
-  });
+  if (fee) {
+    unsignedTransaction.outputs.push({
+      ergoTree: minerErgoTree,
+      assets: [],
+      additionalRegisters: {},
+      value: fee,
+      creationHeight: height,
+    });
+  }
 
   boxesToSpend.forEach((box) => {
     unsignedTransaction.inputs.push({
@@ -202,65 +216,15 @@ export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddr
     });
   });
 
-  const signedTransaction = Object.assign({}, unsignedTransaction);
-  const serialize = serializeTx(unsignedTransaction);
-  signedTransaction.inputs.forEach((input, ind) => {
-    const signBytes = sign(serialize, new BN(boxesToSpend[ind].sk, 16));
+  const signedTransaction = { ...unsignedTransaction };
+  const serializeTransaction = serializeTx(unsignedTransaction);
 
+  signedTransaction.inputs.forEach((input, ind) => {
+    const signBytes = sign(serializeTransaction, new BN(boxesToSpend[ind].sk, 16));
     input.spendingProof.proofBytes = signBytes.toString('hex');
   });
+
   return signedTransaction;
-}
-
-export function createTransaction(boxesToSpend, outputs, fee, height) {
-    const unsignedTransaction = {
-        inputs: [],
-        dataInputs: [],
-        outputs: [],
-    };
-
-    const ergoTreeBytes = Buffer.from([0x00, 0x08, 0xcd]);
-    const minerErgoTree = constants.minerTree;
-
-    for (let i in outputs) {
-        let address = outputs[i].address;
-        let tree = Buffer.concat([ergoTreeBytes, pkFromWallet(address)]).toString('hex');
-
-        unsignedTransaction.outputs.push({
-            ergoTree: tree,
-            assets: [],
-            additionalRegisters: {},
-            value: outputs[i].amount,
-            creationHeight: height,
-        });
-    }
-
-    if (fee) {
-        unsignedTransaction.outputs.push({
-            ergoTree: minerErgoTree,
-            assets: [],
-            additionalRegisters: {},
-            value: fee,
-            creationHeight: height,
-        });
-    }
-
-    boxesToSpend.forEach((box) => {
-        unsignedTransaction.inputs.push({
-            boxId: box.id,
-            spendingProof: {
-                proofBytes: '',
-                extension: {},
-            },
-        });
-    });
-
-    const signedTransaction = Object.assign({}, unsignedTransaction);
-    signedTransaction.inputs.forEach((input, ind) => {
-        const signBytes = sign(serializeTx(unsignedTransaction), new BN(boxesToSpend[ind].sk, 16));
-        input.spendingProof.proofBytes = signBytes.toString('hex');
-    });
-    return signedTransaction;
 }
 
 /**
@@ -335,7 +299,9 @@ export async function sendWithoutBoxId(recipient, amount, fee, sk) {
  */
 
 export function sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height) {
-  const signedTransaction = formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height);
+  const signedTransaction = formTransaction(
+    recipient, amount, fee, boxesToSpend, chargeAddress, height
+  );
 
   const sendTransactionURL = constants.url;
 
