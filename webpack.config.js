@@ -15,6 +15,8 @@ const npmFile = Object.assign({}, {
     path: path.resolve(__dirname, './'),
     filename: 'index.js',
     library: 'ergo',
+    libraryTarget: 'umd',
+    umdNamedDefine: true,
   },
 });
 
