@@ -41,9 +41,10 @@
     }
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "webpack"
   },
-  "author": "",
+  "author": "Ergoplatform",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ergoplatform/ergo-js/issues"
