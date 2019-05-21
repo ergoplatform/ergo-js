@@ -247,7 +247,7 @@ export async function sendWithoutBoxId(recipient, amount, fee, sk) {
     })
     .then(res => res.json())
     .then((data) => {
-      const resBox = data.filter(x => x.value >= Number(amount) + Number(fee))[0];
+      const resBox = data.filter(x => x.value >= Number(amount) + Number(fee));
 
       const boxesSort = (boxes) => {
         const sortableKeys = Object.keys(boxes).sort((a, b) => boxes[b].value - boxes[a].value);
@@ -274,8 +274,8 @@ export async function sendWithoutBoxId(recipient, amount, fee, sk) {
         }
       } else {
         const b = {
-          id: resBox.id,
-          amount: resBox.value,
+          id: resBox[0].id,
+          amount: resBox[0].value,
           sk,
         };
 
