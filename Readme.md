@@ -5,68 +5,116 @@
 import in body
 
 ```
-<script src='path_to/ergo.js'></script>
+<script src='path_to/dist/ergo.js'></script> 
+```
+
+With npm:
+
+```
+npm install @ergoplatform/ergo-js
+```
+
+Or yarn:
+```
+yarn add @ergoplatform/ergo-js
 ```
 
 # Usage
 
+### In body:
+
+```
+<script src='path_to/ergo.js'></script>
+<script>
+  ergo.sendTransaction(...)
+</script> 
+```
+
+### In Node.js:
+
+```
+const ergo = require('@ergoplatform/ergo-js');
+
+ergo.sendTransaction(...)
+```
+
+### Import syntax
+
+```
+import * as ergo from '@ergoplatform/ergo-js'
+
+ergo.sendTransaction(...)
+
+// or destructuring assignment
+
+import { sendTransaction } from '@ergoplatform/ergo-js'
+
+sendTransaction(...)
+```
+
+# Documentation
+
 ### Default send transaction
 
 ```
-* @param  Wallet address{String} recipient
+import { sendTransaction } from '@ergoplatform/ergo-js'
+
+* @param  {String} recipient
 * @param  {Number} amount
 * @param  {Number} fee
 * @param  {Array[object]} boxesToSpend
-* @param  WalletAddress{String} chargeAddress
+* @param  {String} chargeAddress
 * @param  {Number} height
 
-ergo.sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height)
+sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height)
 ```
 
 ### Send transaction only with sk
 
 ```
-* @param  Wallet address{string} recipient
+import { sendWithoutBoxId } from '@ergoplatform/ergo-js'
+
+* @param  {string} recipient
 * @param  {number} amount
 * @param  {number} fee
 * @param  {string} sk
 
-ergo.sendWithoutBoxId(recipient, amount, fee, sk) 
+sendWithoutBoxId(recipient, amount, fee, sk) 
 ```
 
 ### Form transaction and returns it
 
 ```
-* @param  Wallet address{String} recipient
+import { formTransaction } from '@ergoplatform/ergo-js'
+
+* @param  {String} recipient
 * @param  {Number} amount
 * @param  {Number} fee
 * @param  {Array[object({ id: number, amount: number, sk(hex): string })]} boxesToSpend
 * @param  {String} chargeAddress
 * @param  {Number} height
 
-ergo.formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height)
+formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height)
 ```
 
 ### Generate wallet address from public key
 
 ```
+import { walletFromPK } from '@ergoplatform/ergo-js'
+
 * @param  {string} pk
 * @param  {boolean} testNet
 
-ergo.walletFromPK(pk, test_net)
+walletFromPK(pk, test_net)
 ```
 
 ### Generate wallet address from private key
 
 ```
+import { walletFromSK } from '@ergoplatform/ergo-js'
+
 * @param  {string} sk
 * @param  {boolean} testNet
 
-ergo.walletFromSK(pk, test_net)
-```
-
-# Running the tests
-
-```
-npm test
+walletFromSK(pk, test_net)
 ```
