@@ -49,16 +49,16 @@ ergoSchnorr.tryToSign = (msgBytes, sk) => {
   return Buffer.concat([cb, zb]);
 };
 
-export function sign(msgBytes, sk) {
+export const sign = (msgBytes, sk) => {
   let sig = ergoSchnorr.tryToSign(msgBytes, sk);
 
   while (!sig) {
     sig = ergoSchnorr.tryToSign(msgBytes, sk);
   }
   return sig;
-}
+};
 
-export function verify(msgBytes, sigBytes, pkBytes) {
+export const verify = (msgBytes, sigBytes, pkBytes) => {
   if (sigBytes.length !== 56) {
     throw new Error();
   }
@@ -74,4 +74,4 @@ export function verify(msgBytes, sigBytes, pkBytes) {
   const c2 = ergoSchnorr.numHash(s);
 
   return c2.eq(c);
-}
+};
