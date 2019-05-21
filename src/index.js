@@ -9,7 +9,7 @@ import { sign } from './ergo_schnorr';
 const EC = elliptic.ec;
 const { curve } = EC('secp256k1');
 
-export async function getCurrentHeight() {
+export const getCurrentHeight = async () => {
   const { total } = await fetch(
     url.resolve(constants.testnet_url, '/blocks?limit=1'),
     {
@@ -21,7 +21,7 @@ export async function getCurrentHeight() {
   ).then(res => res.json());
 
   return total;
-}
+};
 
 /**
  * Get public key from wallet
@@ -29,10 +29,10 @@ export async function getCurrentHeight() {
  * @param  {number} ergoAdress
  */
 
-export function pkFromWallet(ergoAdress) {
+export const pkFromWallet = (ergoAdress) => {
   const adrBytes = bs58.decode(ergoAdress);
   return adrBytes.slice(1, 34);
-}
+};
 
 /**
  * Get wallet from public key
@@ -41,7 +41,7 @@ export function pkFromWallet(ergoAdress) {
  * @param  {boolean} testNet
  */
 
-export function walletFromPK(pk, testNet = false) {
+export const walletFromPK = (pk, testNet = false) => {
   let NETWORK_TYPE;
   const P2PK_TYPE = 1;
 
@@ -54,7 +54,7 @@ export function walletFromPK(pk, testNet = false) {
   const address = Buffer.concat([prefixByte, contentBytes, checksum]).slice(0, 38);
 
   return bs58.encode(address);
-}
+};
 
 /**
  * Get wallet from secret key
@@ -63,12 +63,12 @@ export function walletFromPK(pk, testNet = false) {
  * @param  {boolean} testNet
  */
 
-export function walletFromSK(sk, testNet = false) {
+export const walletFromSK = (sk, testNet = false) => {
   const pk = Buffer.from(curve.g.mul(sk).encodeCompressed());
   return walletFromPK(pk, testNet);
-}
+};
 
-function intToVlq(num) {
+const intToVlq = (num) => {
   let x = num;
   let res = Buffer.from([]);
   let r;
@@ -80,9 +80,9 @@ function intToVlq(num) {
   r = (x & 0x7F);
   res = Buffer.concat([res, Buffer.from([r], null, 1)]);
   return res;
-}
+};
 
-function outputBytes(out) {
+const outputBytes = (out) => {
   let res = intToVlq(out.value);
   res = Buffer.concat([res, Buffer.from(out.ergoTree, 'hex')]);
   res = Buffer.concat([res, intToVlq(out.creationHeight)]);
@@ -91,13 +91,11 @@ function outputBytes(out) {
   const k = out.additionalRegisters.length;
   res = Buffer.concat([res, intToVlq(k)]);
   return res;
-}
+};
 
-function valueSerialize(val) {
-  return '';
-}
+const valueSerialize = val => '';
 
-function inputBytes(i) {
+const inputBytes = (i) => {
   let res = Buffer.from(i.boxId, 'hex');
   const sp = i.spendingProof;
   res = Buffer.concat([res, intToVlq(sp.proofBytes.length)]);
@@ -108,14 +106,11 @@ function inputBytes(i) {
     res += valueSerialize(sp.extension[k]);
   }
   return res;
-}
+};
 
-function distinctTokenList(outputs) {
-  // TODO: rework this
-  return [];
-}
+const distinctTokenList = outputs => []; // TODO: rework this
 
-function serializeTx(tx) {
+const serializeTx = (tx) => {
   let res = intToVlq(tx.inputs.length);
   for (const key in tx.inputs) {
     res = Buffer.concat([res, inputBytes(tx.inputs[key])]);
@@ -139,7 +134,7 @@ function serializeTx(tx) {
     res = Buffer.concat([res, outputBytes(tx.outputs[key])]);
   }
   return res;
-}
+};
 
 /**
  * @param  {String} recipient
@@ -150,7 +145,7 @@ function serializeTx(tx) {
  * @param  {Number} height
  */
 
-export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height) {
+export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddress, height) => {
   const globalAmount = boxesToSpend.reduce((sum, box) => sum + box.amount, 0);
   const outputs = [
     {
@@ -164,7 +159,7 @@ export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddr
   ];
 
   return createTransaction(boxesToSpend, outputs, fee, height);
-}
+};
 
 /**
  * @param  {Array[object]} boxesToSpend
@@ -173,7 +168,7 @@ export function formTransaction(recipient, amount, fee, boxesToSpend, chargeAddr
  * @param  {Number} height
  */
 
-export function createTransaction(boxesToSpend, outputs, fee, height) {
+export const createTransaction = (boxesToSpend, outputs, fee, height) => {
   const unsignedTransaction = {
     inputs: [],
     dataInputs: [],
@@ -225,7 +220,7 @@ export function createTransaction(boxesToSpend, outputs, fee, height) {
   });
 
   return signedTransaction;
-}
+};
 
 /**
  * @param  {string} recipient
@@ -234,7 +229,7 @@ export function createTransaction(boxesToSpend, outputs, fee, height) {
  * @param  {string} sk
  */
 
-export async function sendWithoutBoxId(recipient, amount, fee, sk) {
+export const sendWithoutBoxId = async (recipient, amount, fee, sk) => {
   const wallet = walletFromSK(sk, true);
   const height = await getCurrentHeight();
 
@@ -285,7 +280,7 @@ export async function sendWithoutBoxId(recipient, amount, fee, sk) {
     .catch((res) => {
       console.log(res);
     });
-}
+};
 
 /**
  * Send transaction to address
@@ -298,7 +293,7 @@ export async function sendWithoutBoxId(recipient, amount, fee, sk) {
  * @param  {Number} height
  */
 
-export function sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height) {
+export const sendTransaction = (recipient, amount, fee, boxesToSpend, chargeAddress, height) => {
   const signedTransaction = formTransaction(
     recipient, amount, fee, boxesToSpend, chargeAddress, height
   );
@@ -320,4 +315,4 @@ export function sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddr
   .catch((res) => {
     console.log(res);
   });
-}
+};
