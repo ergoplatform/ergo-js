@@ -38,7 +38,7 @@ const ergo = require('@ergoplatform/ergo-js');
 ergo.sendTransaction(...)
 ```
 
-### Import syntax
+### Import syntax:
 
 ```
 import * as ergo from '@ergoplatform/ergo-js'
@@ -62,11 +62,11 @@ import { sendTransaction } from '@ergoplatform/ergo-js'
 * @param  {String} recipient
 * @param  {Number} amount
 * @param  {Number} fee
-* @param  {Array[object]} boxesToSpend
+* @param  {Array[object({ id: number, amount: number, sk(hex): string })]}} boxesToSpend
 * @param  {String} chargeAddress
 * @param  {Number} height
 
-sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height)
+sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height, sk)
 ```
 
 ### Send transaction only with sk
@@ -97,24 +97,24 @@ import { formTransaction } from '@ergoplatform/ergo-js'
 formTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height)
 ```
 
-### Generate wallet address from public key
+### Generate charge address from public key
 
 ```
-import { walletFromPK } from '@ergoplatform/ergo-js'
+import { addressFromPK } from '@ergoplatform/ergo-js'
 
 * @param  {string} pk
 * @param  {boolean} testNet
 
-walletFromPK(pk, test_net)
+addressFromPK(pk, test_net)
 ```
 
-### Generate wallet address from private key
+### Generate charge address from private key
 
 ```
-import { walletFromSK } from '@ergoplatform/ergo-js'
+import { addressFromSK } from '@ergoplatform/ergo-js'
 
 * @param  {string} sk
 * @param  {boolean} testNet
 
-walletFromSK(pk, test_net)
+addressFromSK(pk, test_net)
 ```
