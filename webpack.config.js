@@ -1,7 +1,8 @@
 const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
 
-const buildFile = Object.assign({}, {
+const buildFile = {
+  devtool: 'source-map',
   entry: './src/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -26,10 +27,11 @@ const buildFile = Object.assign({}, {
       }
     )],
   },
-});
+};
 
-const npmFile = Object.assign({}, {
+const npmFile = {
   entry: './src/index.js',
+  devtool: 'source-map',
   output: {
     path: path.resolve(__dirname, './'),
     filename: 'index.js',
@@ -55,7 +57,7 @@ const npmFile = Object.assign({}, {
       }
     )],
   },
-});
+};
 
 // Return Array of Configurations
 module.exports = [

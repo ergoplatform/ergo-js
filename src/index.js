@@ -42,7 +42,7 @@ export const getResolveBoxes = (boxes, amount, fee, sk) => {
       || is.not.number(fee)
       || is.not.string(sk)
     ) {
-      throw new Error('Bad type in params');
+      throw new TypeError('Bad type in params');
     }
 
     let initValue = 0;
@@ -96,7 +96,7 @@ export const pkFromAddress = (ergoAdress) => {
     if (
       is.not.string(ergoAdress)
     ) {
-      throw new Error('Bad type in params');
+      throw new TypeError('Bad type in params');
     }
 
     const addrBytes = bs58.decode(ergoAdress);
@@ -134,7 +134,7 @@ export const addressFromSK = (sk, testNet = false) => {
       is.not.string(sk)
       || is.not.boolean(testNet)
     ) {
-      throw new Error('Bad type in params');
+      throw new TypeError('Bad type in params');
     }
 
     const pk = Buffer.from(curve.g.mul(sk).encodeCompressed());
@@ -163,7 +163,7 @@ export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddr
       || is.not.string(chargeAddress)
       || is.not.number(height)
     ) {
-      throw new Error('Bad type in params');
+      throw new TypeError('Bad type in params');
     }
 
     const globalAmount = boxesToSpend.reduce((sum, box) => sum + box.amount, 0);
@@ -199,7 +199,7 @@ export const createTransaction = (boxesToSpend, outputs, fee, height) => {
       || is.not.number(fee)
       || is.not.number(height)
     ) {
-      throw new Error('Bad type in params');
+      throw new TypeError('Bad type in params');
     }
 
     const unsignedTransaction = {
@@ -273,7 +273,7 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk) => {
       || is.not.number(fee)
       || is.not.string(sk))
     ) {
-      throw new Error('Bad type in params');
+      throw new TypeError('Bad type in params');
     }
 
     const address = addressFromSK(sk, true);
@@ -312,7 +312,7 @@ export const sendTransaction = (recipient, amount, fee, boxesToSpend, chargeAddr
       || is.not.string(chargeAddress)
       || is.not.number(height)
     ) {
-      throw new Error('Bad type in params');
+      throw new TypeError('Bad type in params');
     }
 
     const signedTransaction = formTransaction(
