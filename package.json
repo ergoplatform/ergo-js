@@ -6,6 +6,7 @@
   "publishConfig": {
     "access": "public"
   },
+  "sideEffects": false,
   "repository": "https://github.com/ergoplatform/ergo-js",
   "dependencies": {
     "blakejs": "^1.1.0",
@@ -20,9 +21,12 @@
     "@babel/node": "^7.2.2",
     "@babel/plugin-proposal-object-rest-spread": "^7.4.4",
     "@babel/plugin-transform-async-to-generator": "^7.4.4",
+    "@babel/polyfill": "^7.4.4",
     "@babel/preset-env": "^7.4.4",
     "babel-eslint": "^10.0.1",
     "babel-jest": "^24.8.0",
+    "babel-loader": "^8.0.6",
+    "core-js": "^3.1.2",
     "eslint": "^5.16.0",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-config-fbjs": "^3.1.0",
@@ -33,6 +37,8 @@
     "eslint-plugin-no-for-of-loops": "^1.0.0",
     "jest": "^24.8.0",
     "node-loader": "^0.6.0",
+    "size-limit": "^1.3.5",
+    "terser-webpack-plugin": "^1.3.0",
     "webpack": "^4.32.2",
     "webpack-cli": "^3.3.2"
   },
@@ -47,12 +53,21 @@
   },
   "scripts": {
     "test": "jest",
-    "build": "webpack"
+    "build": "webpack --mode production",
+    "size": "npm run build && size-limit"
   },
   "author": "Ergoplatform",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ergoplatform/ergo-js/issues"
   },
-  "homepage": "https://github.com/ergoplatform/ergo-js"
+  "homepage": "https://github.com/ergoplatform/ergo-js",
+  "browserslist": [
+    "defaults"
+  ],
+  "size-limit": [
+     {
+       "path": "dist/ergo.js"
+     }
+  ]
 }

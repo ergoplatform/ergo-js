@@ -1,8 +1,8 @@
 module.exports = {
   browser: true,
-  moduleFileExtensions: ['js','json'],
+  moduleFileExtensions: ['js', 'json'],
   transform: {
-    '^.+\\.(js|jsx)?$': 'babel-jest'
+    '^.+\\.(js|jsx)?$': 'babel-jest',
   },
-  transformIgnorePatterns: ['<rootDir>/node_modules/','<rootDir>/dist/']
+  transformIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/dist/'],
 };
