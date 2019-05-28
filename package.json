@@ -66,8 +66,8 @@
     "defaults"
   ],
   "size-limit": [
-     {
-       "path": "dist/ergo.js"
-     }
+    {
+      "path": "dist/ergo.js"
+    }
   ]
 }

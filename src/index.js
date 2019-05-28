@@ -29,40 +29,55 @@ export const getBoxesFromAddress = async (address) => {
 };
 
 /**
- * @param  {Array[object({ id: number, amount: number, sk(hex): string })]} boxes
+ * @param  {Array[object({ id: number, amount: number })]} boxes
  * @param  {Number} amount
  * @param  {Number} fee
+ */
+
+export const getResolveBoxes = (boxes, amount, fee) => {
+  if (
+    is.not.array(boxes)
+    || is.not.number(amount)
+    || is.not.number(fee)
+  ) {
+    throw new TypeError('Bad type in params');
+  }
+
+  let initValue = 0;
+  let initBoxes = [];
+  let hasBoxes = false;
+  for (const key of sortBoxes(boxes)) {
+    initValue += boxes[key].value;
+    initBoxes = [...initBoxes, boxes[key]];
+
+    if (initValue >= Number(amount) + Number(fee)) {
+      hasBoxes = true;
+      break;
+    }
+  }
+
+  if (!hasBoxes) {
+    throw new Error('Insufficient funds');
+  }
+
+  return initBoxes.map(box => ({ id: box.id, amount: box.value }));
+};
+
+/**
+ * @param  {Array[[object({ id: number, amount: number })]]} boxes
  * @param  {String} sk
  */
-export const getResolveBoxes = (boxes, amount, fee, sk) => {
+
+export const importSkIntoBoxes = (boxes, sk) => {
   try {
     if (
       is.not.array(boxes)
-      || is.not.number(amount)
-      || is.not.number(fee)
       || is.not.string(sk)
     ) {
       throw new TypeError('Bad type in params');
     }
 
-    let initValue = 0;
-    let initBoxes = [];
-    let hasBoxes = false;
-    for (const key of sortBoxes(boxes)) {
-      initValue += boxes[key].value;
-      initBoxes = [...initBoxes, boxes[key]];
-
-      if (initValue >= Number(amount) + Number(fee)) {
-        hasBoxes = true;
-        break;
-      }
-    }
-
-    if (hasBoxes) {
-      return initBoxes.map(box => ({ id: box.id, amount: box.value, sk }));
-    }
-
-    return null;
+    return boxes.map(box => ({ ...box, sk }));
   } catch (e) {
     console.log(`${e.name}: ${e.message}`);
   }
@@ -282,9 +297,10 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk) => {
     const resolveBoxes = getResolveBoxes(addressBoxes, amount, fee, sk);
 
     if (resolveBoxes != null) {
-      sendTransaction(recipient, amount, fee, resolveBoxes, address, height);
+      const boxesWithSk = importSkIntoBoxes(resolveBoxes, sk);
+
+      sendTransaction(recipient, amount, fee, boxesWithSk, address, height);
     } else {
-      throw new Error('Insufficient funds');
     }
   } catch (e) {
     console.log(`${e.name}: ${e.message}`);
