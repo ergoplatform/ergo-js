@@ -27,7 +27,7 @@ testNetServer.interceptors.response.use(
 );
 
 export const transactionsServer = axios.create({
-  baseURL: constansts.url,
+  baseURL: constansts.transactionsSendUrl,
   timeout: 1000 * 5,
   headers: {
     'Content-Type': 'application/json',
