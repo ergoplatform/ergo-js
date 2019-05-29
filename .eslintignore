@@ -1,7 +1,7 @@
 # Third party
-node_modules
+node_modules/
 
 # Build products
 dist/
 
-tests/
+index.js
