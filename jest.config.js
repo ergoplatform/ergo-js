@@ -7,4 +7,7 @@ module.exports = {
   transformIgnorePatterns: [
     '/node_modules/', './dist/',
   ],
+  globals: {
+    window: true,
+  },
 };

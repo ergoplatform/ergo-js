@@ -2,7 +2,6 @@ import BN from 'bn.js';
 import blake from 'blakejs';
 import bs58 from 'bs58';
 import { ec } from 'elliptic';
-import url from 'url';
 import is from 'is_js';
 import constants from './constants';
 import { serializeTx, sortBoxes } from './supportFunctions';
@@ -46,6 +45,7 @@ export const getBoxesFromAddress = async (address) => {
 export const getResolveBoxes = (boxes, amount, fee) => {
   if (
     is.not.array(boxes)
+    || is.empty(boxes)
     || is.not.number(amount)
     || is.not.number(fee)
   ) {
@@ -78,18 +78,15 @@ export const getResolveBoxes = (boxes, amount, fee) => {
  */
 
 export const importSkIntoBoxes = (boxes, sk) => {
-  try {
-    if (
-      is.not.array(boxes)
-      || is.not.string(sk)
-    ) {
-      throw new TypeError('Bad type in params');
-    }
-
-    return boxes.map(box => ({ ...box, sk }));
-  } catch (e) {
-    console.log(`${e.name}: ${e.message}`);
+  if (
+    is.empty(boxes)
+    || is.not.array(boxes)
+    || is.not.string(sk)
+  ) {
+    throw new TypeError('Bad type in params');
   }
+
+  return boxes.map(box => ({ ...box, sk }));
 };
 
 /**
@@ -99,18 +96,14 @@ export const importSkIntoBoxes = (boxes, sk) => {
  */
 
 export const pkFromAddress = (ergoAdress) => {
-  try {
-    if (
-      is.not.string(ergoAdress)
-    ) {
-      throw new TypeError('Bad type in params');
-    }
-
-    const addrBytes = bs58.decode(ergoAdress);
-    return addrBytes.slice(1, 34);
-  } catch (e) {
-    console.log(`${e.name}: ${e.message}`);
+  if (
+    is.not.string(ergoAdress)
+  ) {
+    throw new TypeError('Bad type in params');
   }
+
+  const addrBytes = bs58.decode(ergoAdress);
+  return addrBytes.slice(1, 34);
 };
 
 export const addressFromPK = (pk, testNet = false) => {
@@ -136,19 +129,15 @@ export const addressFromPK = (pk, testNet = false) => {
  */
 
 export const addressFromSK = (sk, testNet = false) => {
-  try {
-    if (
-      is.not.string(sk)
-      || is.not.boolean(testNet)
-    ) {
-      throw new TypeError('Bad type in params');
-    }
-
-    const pk = Buffer.from(curve.g.mul(sk).encodeCompressed());
-    return addressFromPK(pk, testNet);
-  } catch (e) {
-    console.log(`${e.name}: ${e.message}`);
+  if (
+    is.not.string(sk)
+    || is.not.boolean(testNet)
+  ) {
+    throw new TypeError('Bad type in params');
   }
+
+  const pk = Buffer.from(curve.g.mul(sk).encodeCompressed());
+  return addressFromPK(pk, testNet);
 };
 
 /**
@@ -195,66 +184,66 @@ export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddr
  */
 
 export const createTransaction = (boxesToSpend, outputs, fee, height) => {
-    if (
-      is.not.array(boxesToSpend)
-      || is.not.array(outputs)
-      || is.not.number(fee)
-      || is.not.number(height)
-    ) {
-      throw new TypeError('Bad type in params');
-    }
+  if (
+    is.not.array(boxesToSpend)
+    || is.not.array(outputs)
+    || is.not.number(fee)
+    || is.not.number(height)
+  ) {
+    throw new TypeError('Bad type in params');
+  }
 
-    const unsignedTransaction = {
-      inputs: [],
-      dataInputs: [],
-      outputs: [],
-    };
+  const unsignedTransaction = {
+    inputs: [],
+    dataInputs: [],
+    outputs: [],
+  };
 
-    const ergoTreeBytes = Buffer.from([0x00, 0x08, 0xcd]);
-    const minerErgoTree = constants.minerTree;
+  const ergoTreeBytes = Buffer.from([0x00, 0x08, 0xcd]);
+  const minerErgoTree = constants.minerTree;
 
-    for (const i in outputs) {
-      const { address, amount } = outputs[i];
-      const tree = Buffer.concat([ergoTreeBytes, pkFromAddress(address)]).toString('hex');
+  for (const i in outputs) {
+    const { address, amount } = outputs[i];
+    const tree = Buffer.concat([ergoTreeBytes, pkFromAddress(address)]).toString('hex');
 
-      unsignedTransaction.outputs.push({
-        ergoTree: tree,
-        assets: [],
-        additionalRegisters: {},
-        value: amount,
-        creationHeight: height,
-      });
-    }
-
-    if (fee !== null && fee !== undefined) {
-      unsignedTransaction.outputs.push({
-        ergoTree: minerErgoTree,
-        assets: [],
-        additionalRegisters: {},
-        value: fee,
-        creationHeight: height,
-      });
-    }
-
-    boxesToSpend.forEach((box) => {
-      unsignedTransaction.inputs.push({
-        boxId: box.id,
-        spendingProof: {
-          proofBytes: '',
-          extension: {},
-        },
-      });
+    unsignedTransaction.outputs.push({
+      ergoTree: tree,
+      assets: [],
+      additionalRegisters: {},
+      value: amount,
+      creationHeight: height,
     });
+  }
 
-    const signedTransaction = { ...unsignedTransaction };
-    const serializeTransaction = serializeTx(unsignedTransaction);
-
-    signedTransaction.inputs.forEach((input, ind) => {
-      const signBytes = sign(serializeTransaction, new BN(boxesToSpend[ind].sk, 16));
-      input.spendingProof.proofBytes = signBytes.toString('hex');
+  if (fee !== null && fee !== undefined) {
+    unsignedTransaction.outputs.push({
+      ergoTree: minerErgoTree,
+      assets: [],
+      additionalRegisters: {},
+      value: fee,
+      creationHeight: height,
     });
+  }
 
-    return signedTransaction;
+  boxesToSpend.forEach((box) => {
+    unsignedTransaction.inputs.push({
+      boxId: box.id,
+      spendingProof: {
+        proofBytes: '',
+        extension: {},
+      },
+    });
+  });
+
+  const signedTransaction = { ...unsignedTransaction };
+  const serializeTransaction = serializeTx(unsignedTransaction);
+
+  signedTransaction.inputs.forEach((input, ind) => {
+    const signBytes = sign(serializeTransaction, new BN(boxesToSpend[ind].sk, 16));
+    input.spendingProof.proofBytes = signBytes.toString('hex');
+  });
+
+  return signedTransaction;
 };
 
 /**
@@ -267,9 +256,9 @@ export const createTransaction = (boxesToSpend, outputs, fee, height) => {
 export const sendWithoutBoxId = async (recipient, amount, fee, sk) => {
   if (
     is.not.string(recipient)
-    || is.not.number(amount
+    || is.not.number(amount)
     || is.not.number(fee)
-    || is.not.string(sk))
+    || is.not.string(sk)
   ) {
     throw new TypeError('Bad type in params');
   }
@@ -278,10 +267,9 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk) => {
   const height = await getCurrentHeight();
 
   const addressBoxes = await getBoxesFromAddress(address);
-  const resolveBoxes = getResolveBoxes(addressBoxes, amount, fee, sk);
+  const resolveBoxes = getResolveBoxes(addressBoxes, amount, fee);
   const boxesWithSk = importSkIntoBoxes(resolveBoxes, sk);
-
-  sendTransaction(recipient, amount, fee, boxesWithSk, address, height);
+  return sendTransaction(recipient, amount, fee, boxesWithSk, address, height);
 };
 
 /**
@@ -295,7 +283,9 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk) => {
  * @param  {Number} height
  */
 
-export const sendTransaction = (recipient, amount, fee, boxesToSpend, chargeAddress, height) => {
+export const sendTransaction = async (
+    recipient, amount, fee, boxesToSpend, chargeAddress, height
+  ) => {
   if (
     is.not.string(recipient)
     || is.not.number(amount)
@@ -311,9 +301,12 @@ export const sendTransaction = (recipient, amount, fee, boxesToSpend, chargeAddr
     recipient, amount, fee, boxesToSpend, chargeAddress, height
   );
 
-  transactionsServer({
+
+  const res = await transactionsServer({
     method: 'POST',
     url: `/transactions/send`,
     data: signedTransaction,
-  }).then(res => console.log(res));
+  });
+
+  return res;
 };

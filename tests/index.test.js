@@ -1,6 +1,19 @@
 import BN from 'bn.js';
-import { addressFromPK, getResolveBoxes } from '../src/index';
+import {
+  addressFromPK,
+  getResolveBoxes,
+  getCurrentHeight,
+  getBoxesFromAddress,
+  addressFromSK,
+  importSkIntoBoxes,
+  sendWithoutBoxId
+} from '../src/index';
 import { sign, verify } from '../src/ergo_schnorr';
+import MockAdapter from 'axios-mock-adapter'
+import { testNetServer, transactionsServer } from '../src/api';
+
+const testAddress = "3WxxVQqxoVSWEKG5B73eNttBX51ZZ6WXLW7fiVDgCFhzRK8R4gmk"
+const testSK = "8e6993a4999f009c03d9457ffcf8ff3d840ae78332c959c8e806a53fbafbbee1";
 
 test('P2PK wallet in test network test vector', () => {
   expect(
@@ -17,6 +30,41 @@ test('simple signature test vector', () => {
   expect(verify(msgBytes, signBytes, pkBytes)).toBe(true);
 });
 
+describe('getCurrentHeight function', () => {
+  it('should reply 200 and return current height', async () => {
+    let mock = new MockAdapter(testNetServer);
+    mock.onGet(`/blocks?limit=1`)
+      .reply(200, { total: 500 });
+
+    const res = await getCurrentHeight();
+
+    expect(res).toEqual(500);
+  })
+})
+
+describe('getBoxesFromAddress function', () => {
+  it('get error if put bad params', async () => {
+    let error;
+    try {
+      await getBoxesFromAddress(123);
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toEqual(new TypeError('Bad type in params'));
+  })
+
+  it('should return boxes from address', async () => {
+    let mock = new MockAdapter(testNetServer);
+    const address = "123";
+    mock.onGet(`/transactions/boxes/byAddress/unspent/${address}`)
+      .reply(200, [{ id:"1", value: 500 }, { id:"2", value: 500 }]);
+
+    const res = await getBoxesFromAddress(address);
+
+    expect(res).toEqual([{ id:"1", value: 500 }, { id:"2", value: 500 }]);
+  })
+})
+
 describe('getResolveBoxes function', () => {
   const mockBoxes = [
     {
@@ -31,8 +79,9 @@ describe('getResolveBoxes function', () => {
 
   it('should return error with bad params', () => {
     expect(() => getResolveBoxes(null, 12, 1)).toThrow(TypeError);
-    expect(() => getResolveBoxes([], "12", 1)).toThrow(TypeError);
-    expect(() => getResolveBoxes([], 12, "1")).toThrow(TypeError);
+    expect(() => getResolveBoxes(mockBoxes, "12", 1)).toThrow(TypeError);
+    expect(() => getResolveBoxes(mockBoxes, 12, "1")).toThrow(TypeError);
+    expect(() => getResolveBoxes([], "12", "1")).toThrow(TypeError);
   })
 
   it('should return one box', () => {
@@ -43,7 +92,106 @@ describe('getResolveBoxes function', () => {
     expect(getResolveBoxes(mockBoxes, 842, 1)).toEqual([{id: "3", amount: "555"}, { id: "2", amount: "444"}])
   })
 
-  it('should return insufficient funds error', () => {
+  it('get error if boxes dont have solution amount', () => {
     expect(() => getResolveBoxes(mockBoxes, 12121212, 1)).toThrow(Error);
+  })
+})
+
+describe('importSkIntoBoxes function', () => {
+  const mockBoxes = [
+    {
+      id: '2',
+      value: '444',
+    },
+    {
+      id: '3',
+      value: '555',
+    },
+  ];
+
+  it('should return error with bad params', () => {
+    expect(() => importSkIntoBoxes(mockBoxes, 1)).toThrow(TypeError);
+    expect(() => importSkIntoBoxes([], "123")).toThrow(TypeError);
+  })
+
+  it('should import secret key into boxes', () => {
+    expect(importSkIntoBoxes(mockBoxes, "2")).toEqual([
+      {
+        id: '2',
+        value: '444',
+        sk: '2',
+      },
+      {
+        id: '3',
+        value: '555',
+        sk: '2'
+      },
+    ])
+  })
+})
+
+describe('addressFromSK function', () => {
+  it('should return error with bad params', () => {
+    expect(() => addressFromSK(testSK, [])).toThrow(TypeError);
+    expect(() => addressFromSK(12, false)).toThrow(TypeError);
+  })
+
+  it('should return address', () => {
+    expect(addressFromSK(testSK, true)).toEqual(testAddress);
+  })
+})
+
+describe('sendWithoutBoxId function', () => {
+  it('should return error with bad params', async () => {
+    let error, error2, error3, error4;
+    try {
+      await sendWithoutBoxId(1, 1, 1, '12');
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toEqual(new TypeError('Bad type in params'));
+
+    try {
+      await sendWithoutBoxId("1", 1, 1, 12);
+    } catch (e) {
+      error2 = e;
+    }
+
+    expect(error2).toEqual(new TypeError('Bad type in params'));
+
+    try {
+      await sendWithoutBoxId("1", "1", 1, '12');
+    } catch (e) {
+      error3 = e;
+    }
+
+    expect(error3).toEqual(new TypeError('Bad type in params'));
+
+    try {
+      await sendWithoutBoxId("1", 1, "1", '12');
+    } catch (e) {
+      error4 = e;
+    }
+
+    expect(error4).toEqual(new TypeError('Bad type in params'));
+  })
+
+  it('should send transaction without boxes', async () => {
+    let mockTransactionsServer = new MockAdapter(transactionsServer);
+    let mockTestnetServer = new MockAdapter(testNetServer);
+
+    mockTestnetServer.onGet(`/transactions/boxes/byAddress/unspent/${testAddress}`)
+      .reply(200, [{ id:"1", value: 500 }, { id:"2", value: 500 }]);
+
+    mockTestnetServer.onGet(`/blocks?limit=1`)
+      .reply(200, { total: 500 });
+
+    mockTransactionsServer.onPost(`/transactions/send`)
+      .reply(200, { id: "1234" });
+
+    const { data }  = await sendWithoutBoxId(testAddress, 550, 100, testSK);
+
+    expect(data).toEqual({ id: "1234" })
   })
 })
