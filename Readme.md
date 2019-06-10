@@ -62,7 +62,7 @@ import { sendTransaction } from '@ergoplatform/ergo-js'
 * @param  {String} recipient
 * @param  {Number} amount
 * @param  {Number} fee
-* @param  {Array[object({ id: number, amount: number, sk(hex): string })]}} boxesToSpend
+* @param  {Array[Object({ id: number, amount: number, sk(hex): string })]}} boxesToSpend
 * @param  {String} chargeAddress
 * @param  {Number} height
 
