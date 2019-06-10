@@ -5,7 +5,7 @@ import { ec } from 'elliptic';
 import is from 'is_js';
 import constants from './constants';
 import { serializeTx, sortBoxes } from './supportFunctions';
-import { sign } from './ergo_schnorr';
+import { sign } from './ergoSchnorr';
 import { testNetServer, transactionsServer } from './api';
 
 const { curve } = ec('secp256k1');
@@ -25,7 +25,7 @@ export const getCurrentHeight = async () => {
 
 export const getBoxesFromAddress = async (address) => {
   if (is.not.string(address)) {
-    throw new TypeError('Bad type in params');
+    throw new TypeError('Bad params');
   }
 
   const { data } = await testNetServer({
@@ -42,14 +42,14 @@ export const getBoxesFromAddress = async (address) => {
  * @param  {Number} fee
  */
 
-export const getResolveBoxes = (boxes, amount, fee) => {
+export const getSolvingBoxes = (boxes, amount, fee) => {
   if (
     is.not.array(boxes)
     || is.empty(boxes)
     || is.not.number(amount)
     || is.not.number(fee)
   ) {
-    throw new TypeError('Bad type in params');
+    throw new TypeError('Bad params');
   }
 
   let resultValue = 0;
@@ -66,10 +66,10 @@ export const getResolveBoxes = (boxes, amount, fee) => {
   }
 
   if (!hasBoxes) {
-    throw new Error('Insufficient funds');
+    return null;
   }
 
-  return resultBoxes.map(box => ({ id: box.id, amount: box.value }));
+  return resultBoxes.map(box => ({ id: box.id, amount: box.value, sk: box.sk }));
 };
 
 /**
@@ -83,7 +83,7 @@ export const importSkIntoBoxes = (boxes, sk) => {
     || is.not.array(boxes)
     || is.not.string(sk)
   ) {
-    throw new TypeError('Bad type in params');
+    throw new TypeError('Bad params');
   }
 
   return boxes.map(box => ({ ...box, sk }));
@@ -99,7 +99,7 @@ export const pkFromAddress = (ergoAdress) => {
   if (
     is.not.string(ergoAdress)
   ) {
-    throw new TypeError('Bad type in params');
+    throw new TypeError('Bad params');
   }
 
   const addrBytes = bs58.decode(ergoAdress);
@@ -133,12 +133,46 @@ export const addressFromSK = (sk, testNet = false) => {
     is.not.string(sk)
     || is.not.boolean(testNet)
   ) {
-    throw new TypeError('Bad type in params');
+    throw new TypeError('Bad params');
   }
 
   const pk = Buffer.from(curve.g.mul(sk).encodeCompressed());
   return addressFromPK(pk, testNet);
 };
+
+/**
+ * @param  {Array[string]} sks
+ * @param  {Number} amount
+ * @param  {Number} fee
+ * @param  {Boolean} testNet
+ */
+
+export const getBoxesFromFewSks = async (sks, amount, fee, testNet = false) => {
+  if (
+    is.not.array(sks)
+    || is.empty(sks)
+    || is.not.number(amount)
+    || is.not.number(fee)
+  ) {
+    throw new TypeError('Bad params');
+  }
+
+  let boxes = [];
+  let result = null;
+  for(const sk of sks) {
+    const chargeAddress = addressFromSK(sk, testNet);
+    const addressBoxes = await getBoxesFromAddress(chargeAddress);
+    const boxesWithSk = importSkIntoBoxes(addressBoxes, sk);
+
+    boxes = [...boxes, ...boxesWithSk];
+    result = getSolvingBoxes(boxes, amount, fee);
+    if (result !== null) {
+      break;
+    }
+  }
+
+  return result;
+}
 
 /**
  * @param  {String} recipient
@@ -158,7 +192,7 @@ export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddr
     || is.not.string(chargeAddress)
     || is.not.number(height)
   ) {
-    throw new TypeError('Bad type in params');
+    throw new TypeError('Bad params');
   }
 
   const globalAmount = boxesToSpend.reduce((sum, box) => sum + box.amount, 0);
@@ -190,7 +224,7 @@ export const createTransaction = (boxesToSpend, outputs, fee, height) => {
     || is.not.number(fee)
     || is.not.number(height)
   ) {
-    throw new TypeError('Bad type in params');
+    throw new TypeError('Bad params');
   }
 
   const unsignedTransaction = {
@@ -247,29 +281,43 @@ export const createTransaction = (boxesToSpend, outputs, fee, height) => {
 };
 
 /**
- * @param  {string} recipient
- * @param  {number} amount
- * @param  {number} fee
- * @param  {string} sk
+ * @param  {String} recipient
+ * @param  {Number} amount
+ * @param  {Number} fee
+ * @param  {Array[String] || String} sk
  */
 
-export const sendWithoutBoxId = async (recipient, amount, fee, sk) => {
+export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = false) => {
   if (
     is.not.string(recipient)
     || is.not.number(amount)
     || is.not.number(fee)
-    || is.not.string(sk)
+    || (is.not.array(sk) && is.not.string(sk))
+    || (is.array(sk) && is.empty(sk))
   ) {
-    throw new TypeError('Bad type in params');
+    throw new TypeError('Bad params');
   }
 
-  const address = addressFromSK(sk, true);
+  let chargeAddress, resolveBoxes;
+
+  if (is.array(sk)) {
+    chargeAddress = addressFromSK(sk[0], testNet);
+    resolveBoxes = await getBoxesFromFewSks(sk, amount, fee, testNet);
+  } else {
+    chargeAddress = addressFromSK(sk, testNet);
+    const addressBoxes = await getBoxesFromAddress(chargeAddress);
+    const boxesWithSk = importSkIntoBoxes(addressBoxes, sk);
+
+    resolveBoxes = getSolvingBoxes(boxesWithSk, amount, fee);
+  }
+
+  if (resolveBoxes === null) {
+    throw new Error('Insufficient funds');
+  }
+
   const height = await getCurrentHeight();
 
-  const addressBoxes = await getBoxesFromAddress(address);
-  const resolveBoxes = getResolveBoxes(addressBoxes, amount, fee);
-  const boxesWithSk = importSkIntoBoxes(resolveBoxes, sk);
-  return sendTransaction(recipient, amount, fee, boxesWithSk, address, height);
+  return sendTransaction(recipient, amount, fee, resolveBoxes, chargeAddress, height);
 };
 
 /**
@@ -294,7 +342,7 @@ export const sendTransaction = async (
     || is.not.string(chargeAddress)
     || is.not.number(height)
   ) {
-    throw new TypeError('Bad type in params');
+    throw new TypeError('Bad params');
   }
 
   const signedTransaction = formTransaction(
