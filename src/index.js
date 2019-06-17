@@ -11,12 +11,14 @@ import { testNetServer, transactionsServer } from './api';
 const { curve } = ec('secp256k1');
 
 export const getCurrentHeight = async () => {
-  const { data: { total } } = await testNetServer({
+  const { data: { items } } = await testNetServer({
     url: '/blocks?limit=1',
     method: 'GET',
   });
 
-  return total;
+  const lastBlockHeight = items[0].height;
+
+  return lastBlockHeight;
 };
 
 /**
@@ -90,8 +92,6 @@ export const importSkIntoBoxes = (boxes, sk) => {
 };
 
 /**
- * Get public key from address
- *
  * @param  {string} ergoAdress
  */
 
@@ -122,8 +122,6 @@ export const addressFromPK = (pk, testNet = false) => {
 };
 
 /**
- * Get address from secret key
- *
  * @param  {string} sk
  * @param  {boolean} testNet
  */
@@ -159,7 +157,7 @@ export const getBoxesFromFewSks = async (sks, amount, fee, testNet = false) => {
 
   let boxes = [];
   let result = null;
-  for(const sk of sks) {
+  for (const sk of sks) {
     const chargeAddress = addressFromSK(sk, testNet);
     const addressBoxes = await getBoxesFromAddress(chargeAddress);
     const boxesWithSk = importSkIntoBoxes(addressBoxes, sk);
@@ -172,7 +170,7 @@ export const getBoxesFromFewSks = async (sks, amount, fee, testNet = false) => {
   }
 
   return result;
-}
+};
 
 /**
  * @param  {String} recipient
@@ -285,6 +283,7 @@ export const createTransaction = (boxesToSpend, outputs, fee, height) => {
  * @param  {Number} amount
  * @param  {Number} fee
  * @param  {Array[String] || String} sk
+ * @param  {Boolean} testNet
  */
 
 export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = false) => {
@@ -298,7 +297,7 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = fal
     throw new TypeError('Bad params');
   }
 
-  let chargeAddress, resolveBoxes;
+  let chargeAddress; let resolveBoxes;
 
   if (is.array(sk)) {
     chargeAddress = addressFromSK(sk[0], testNet);
@@ -321,8 +320,6 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = fal
 };
 
 /**
- * Send transaction to address
- *
  * @param  {String} recipient
  * @param  {Number} amount
  * @param  {Number} fee

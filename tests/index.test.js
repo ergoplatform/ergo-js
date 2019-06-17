@@ -34,12 +34,26 @@ test('simple signature test vector', () => {
 describe('getCurrentHeight function', () => {
   it('should reply 200 and return current height', async () => {
     const mock = new MockAdapter(testNetServer);
+    const currentHeight = 73319;
     mock.onGet(`/blocks?limit=1`)
-      .reply(200, { total: 500 });
+      .reply(200, {
+        items: [
+          {
+            id: '147de5d16ea6d346f0eaad7884e12c12a04d90073bb33475f4ff37ed299de037',
+            height: currentHeight,
+            timestamp: 1560782243190,
+            transactionsCount: 1,
+            miner: { address: 'mPdcmWTSJ6EGzGvG9xmdoYVsTGM6tk2fNpLVFePUU14nENm4mkbxMiuMLqrhSBYohBWkMbRdgdPpJaPy', name: 'gdPpJaPy' },
+            size: 3073,
+            difficulty: 13685489664,
+            minerReward: 75000000000,
+          },
+        ],
+      });
 
     const res = await getCurrentHeight();
 
-    expect(res).toEqual(500);
+    expect(res).toEqual(currentHeight);
   });
 });
 
@@ -267,8 +281,22 @@ describe('sendWithoutBoxId function', () => {
     mockTestnetServer.onGet(`/transactions/boxes/byAddress/unspent/${testAddress}`)
       .reply(200, [{ id: '1', value: 500 }, { id: '2', value: 500 }]);
 
+    const currentHeight = 73319;
     mockTestnetServer.onGet(`/blocks?limit=1`)
-      .reply(200, { total: 500 });
+      .reply(200, {
+        items: [
+          {
+            id: '147de5d16ea6d346f0eaad7884e12c12a04d90073bb33475f4ff37ed299de037',
+            height: currentHeight,
+            timestamp: 1560782243190,
+            transactionsCount: 1,
+            miner: { address: 'mPdcmWTSJ6EGzGvG9xmdoYVsTGM6tk2fNpLVFePUU14nENm4mkbxMiuMLqrhSBYohBWkMbRdgdPpJaPy', name: 'gdPpJaPy' },
+            size: 3073,
+            difficulty: 13685489664,
+            minerReward: 75000000000,
+          },
+        ],
+      });
 
     mockTransactionsServer.onPost(`/transactions/send`)
       .reply(200, { id: '1234' });
@@ -292,6 +320,7 @@ describe('sendWithoutBoxId function', () => {
 
   it('should send transaction without boxes with array sk', async () => {
     const testSks = ['123', '345'];
+    const currentHeight = 73319;
     const testAddressBoxes = [
       { id: '1', value: 500 },
       { id: '2', value: 500 },
@@ -309,7 +338,21 @@ describe('sendWithoutBoxId function', () => {
       .reply(200, [testAddressBoxes[2], testAddressBoxes[3]]);
 
     mockTestnetServer.onGet(`/blocks?limit=1`)
-      .reply(200, { total: 500 });
+    .reply(200, {
+      items: [
+        {
+          id: '147de5d16ea6d346f0eaad7884e12c12a04d90073bb33475f4ff37ed299de037',
+          height: currentHeight,
+          timestamp: 1560782243190,
+          transactionsCount: 1,
+          miner: { address: 'mPdcmWTSJ6EGzGvG9xmdoYVsTGM6tk2fNpLVFePUU14nENm4mkbxMiuMLqrhSBYohBWkMbRdgdPpJaPy', name: 'gdPpJaPy' },
+          size: 3073,
+          difficulty: 13685489664,
+          minerReward: 75000000000,
+        },
+      ],
+    });
+
 
     mockTransactionsServer.onPost(`/transactions/send`)
       .reply(200, { id: '1234' });
@@ -322,12 +365,26 @@ describe('sendWithoutBoxId function', () => {
   it('should send transaction without boxes with string sk', async () => {
     const mockTransactionsServer = new MockAdapter(transactionsServer);
     const mockTestnetServer = new MockAdapter(testNetServer);
+    const currentHeight = 73319;
 
     mockTestnetServer.onGet(`/transactions/boxes/byAddress/unspent/${testAddress}`)
       .reply(200, [{ id: '1', value: 500 }, { id: '2', value: 500 }]);
 
     mockTestnetServer.onGet(`/blocks?limit=1`)
-      .reply(200, { total: 500 });
+      .reply(200, {
+        items: [
+          {
+            id: '147de5d16ea6d346f0eaad7884e12c12a04d90073bb33475f4ff37ed299de037',
+            height: currentHeight,
+            timestamp: 1560782243190,
+            transactionsCount: 1,
+            miner: { address: 'mPdcmWTSJ6EGzGvG9xmdoYVsTGM6tk2fNpLVFePUU14nENm4mkbxMiuMLqrhSBYohBWkMbRdgdPpJaPy', name: 'gdPpJaPy' },
+            size: 3073,
+            difficulty: 13685489664,
+            minerReward: 75000000000,
+          },
+        ],
+      });
 
     mockTransactionsServer.onPost(`/transactions/send`)
       .reply(200, { id: '1234' });
