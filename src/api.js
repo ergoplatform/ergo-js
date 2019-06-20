@@ -14,7 +14,7 @@ export function NetworkError({
 NetworkError.prototype = Object.create(Error.prototype);
 
 export const testNetServer = axios.create({
-  baseURL: constansts.testnetUrl,
+  baseURL: constansts.testNetUrl,
   timeout: 1000 * 5,
   headers: {
     'Content-Type': 'application/json',
@@ -26,15 +26,15 @@ testNetServer.interceptors.response.use(
   error => Promise.reject(new NetworkError(error.response || {})),
 );
 
-export const transactionsServer = axios.create({
-  baseURL: constansts.transactionsSendUrl,
+export const mainNetServer = axios.create({
+  baseURL: constansts.mainNetUrl,
   timeout: 1000 * 5,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-transactionsServer.interceptors.response.use(
+mainNetServer.interceptors.response.use(
   response => Promise.resolve(response),
   error => Promise.reject(new NetworkError(error.response || {})),
 );

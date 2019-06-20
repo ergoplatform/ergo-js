@@ -6,12 +6,14 @@ import is from 'is_js';
 import constants from './constants';
 import { serializeTx, sortBoxes } from './supportFunctions';
 import { sign } from './ergoSchnorr';
-import { testNetServer, transactionsServer } from './api';
+import { testNetServer, mainNetServer } from './api';
 
 const { curve } = ec('secp256k1');
 
-export const getCurrentHeight = async () => {
-  const { data: { items } } = await testNetServer({
+export const getCurrentHeight = async (testNet = false) => {
+  const server = testNet ? testNetServer : mainNetServer;
+
+  const { data: { items } } = await server({
     url: '/blocks?limit=1',
     method: 'GET',
   });
@@ -25,12 +27,13 @@ export const getCurrentHeight = async () => {
  * @param  {string} address
  */
 
-export const getBoxesFromAddress = async (address) => {
+export const getBoxesFromAddress = async (address, testNet = false) => {
   if (is.not.string(address)) {
     throw new TypeError('Bad params');
   }
 
-  const { data } = await testNetServer({
+  const server = testNet ? testNetServer : mainNetServer;
+  const { data } = await server({
     url: `/transactions/boxes/byAddress/unspent/${address}`,
     method: 'GET',
   });
@@ -159,7 +162,7 @@ export const getBoxesFromFewSks = async (sks, amount, fee, testNet = false) => {
   let result = null;
   for (const sk of sks) {
     const chargeAddress = addressFromSK(sk, testNet);
-    const addressBoxes = await getBoxesFromAddress(chargeAddress);
+    const addressBoxes = await getBoxesFromAddress(chargeAddress, testNet);
     const boxesWithSk = importSkIntoBoxes(addressBoxes, sk);
 
     boxes = [...boxes, ...boxesWithSk];
@@ -304,7 +307,7 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = fal
     resolveBoxes = await getBoxesFromFewSks(sk, amount, fee, testNet);
   } else {
     chargeAddress = addressFromSK(sk, testNet);
-    const addressBoxes = await getBoxesFromAddress(chargeAddress);
+    const addressBoxes = await getBoxesFromAddress(chargeAddress, testNet);
     const boxesWithSk = importSkIntoBoxes(addressBoxes, sk);
 
     resolveBoxes = getSolvingBoxes(boxesWithSk, amount, fee);
@@ -314,9 +317,9 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = fal
     throw new Error('Insufficient funds');
   }
 
-  const height = await getCurrentHeight();
+  const height = await getCurrentHeight(testNet);
 
-  return sendTransaction(recipient, amount, fee, resolveBoxes, chargeAddress, height);
+  return sendTransaction(recipient, amount, fee, resolveBoxes, chargeAddress, height, testNet);
 };
 
 /**
@@ -326,10 +329,11 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = fal
  * @param  {Array[object({ id: number, amount: number, sk(hex): string })]} boxesToSpend
  * @param  {String} chargeAddress
  * @param  {Number} height
+ * @param  {Boolean} testNet = false
  */
 
 export const sendTransaction = async (
-    recipient, amount, fee, boxesToSpend, chargeAddress, height
+    recipient, amount, fee, boxesToSpend, chargeAddress, height, testNet = false
   ) => {
   if (
     is.not.string(recipient)
@@ -346,8 +350,9 @@ export const sendTransaction = async (
     recipient, amount, fee, boxesToSpend, chargeAddress, height
   );
 
+  const server = testNet ? testNetServer : mainNetServer;
 
-  const res = await transactionsServer({
+  const res = await server({
     method: 'POST',
     url: `/transactions/send`,
     data: signedTransaction,

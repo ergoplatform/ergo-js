@@ -65,8 +65,9 @@ import { sendTransaction } from '@ergoplatform/ergo-js'
 * @param  {Array[Object({ id: number, amount: number, sk(hex): string })]}} boxesToSpend
 * @param  {String} chargeAddress
 * @param  {Number} height
+* @param  {Boolean} testNet = false
 
-sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height)
+sendTransaction(recipient, amount, fee, boxesToSpend, chargeAddress, height, testNet)
 ```
 
 ### Send transaction only with sk
@@ -78,8 +79,9 @@ import { sendWithoutBoxId } from '@ergoplatform/ergo-js'
 * @param  {Number} amount
 * @param  {Number} fee
 * @param  {String || Array[String]} sk
+* @param  {Boolean} testNet = false
 
-sendWithoutBoxId(recipient, amount, fee, sk) 
+sendWithoutBoxId(recipient, amount, fee, sk, testNet) 
 ```
 
 ### Form transaction and returns it
@@ -105,7 +107,7 @@ import { addressFromPK } from '@ergoplatform/ergo-js'
 * @param  {string} pk
 * @param  {boolean} testNet
 
-addressFromPK(pk, test_net)
+addressFromPK(pk, testNet)
 ```
 
 ### Generate charge address from private key
@@ -116,5 +118,5 @@ import { addressFromSK } from '@ergoplatform/ergo-js'
 * @param  {string} sk
 * @param  {boolean} testNet
 
-addressFromSK(pk, test_net)
+addressFromSK(pk, testNet)
 ```
