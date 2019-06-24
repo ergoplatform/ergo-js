@@ -10,4 +10,6 @@ module.exports = {
   globals: {
     window: true,
   },
+  coverageDirectory: './coverage/',
+  collectCoverage: true,
 };
