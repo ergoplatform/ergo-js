@@ -36,7 +36,7 @@ describe('getCurrentHeight test', () => {
   it('should reply 200 and return current height', async () => {
     const mock = new MockAdapter(testNetServer);
     const currentHeight = 73319;
-    mock.onGet(`/blocks?limit=1`)
+    mock.onGet('/blocks?limit=1')
       .reply(200, {
         items: [
           {
@@ -84,12 +84,12 @@ describe('getBoxesFromAddress test', () => {
 describe('getSolvingBoxes test', () => {
   const mockBoxes = [
     {
-      id: '2',
-      value: '444',
-    },
-    {
       id: '3',
       value: '555',
+    },
+    {
+      id: '2',
+      value: '444',
     },
   ];
 
@@ -101,11 +101,11 @@ describe('getSolvingBoxes test', () => {
   });
 
   it('should return one box', () => {
-    expect(getSolvingBoxes(mockBoxes, 12, 1)).toEqual([{ id: '3', amount: '555' }]);
+    expect(getSolvingBoxes(mockBoxes, 12, 1)).toEqual([mockBoxes[0]]);
   });
 
   it('should return 2 boxes', () => {
-    expect(getSolvingBoxes(mockBoxes, 842, 1)).toEqual([{ id: '3', amount: '555' }, { id: '2', amount: '444' }]);
+    expect(getSolvingBoxes(mockBoxes, 842, 1)).toEqual([...mockBoxes]);
   });
 
   it('get error if boxes dont have solution amount', () => {
@@ -167,10 +167,10 @@ describe('getBoxesFromFewSks test', () => {
   ];
 
   const testResolveBoxes = [
-    { id: '1', amount: 500, sk: '123' },
-    { id: '2', amount: 500, sk: '123' },
-    { id: '3', amount: 500, sk: '345' },
-    { id: '4', amount: 500, sk: '345' },
+    { id: '1', value: 500, sk: '123' },
+    { id: '2', value: 500, sk: '123' },
+    { id: '3', value: 500, sk: '345' },
+    { id: '4', value: 500, sk: '345' },
   ];
 
   it('should return error with bad params', async () => {
@@ -282,7 +282,7 @@ describe('sendWithoutBoxId test', () => {
       .reply(200, [{ id: '1', value: 500 }, { id: '2', value: 500 }]);
 
     const currentHeight = 73319;
-    mockTestnetServer.onGet(`/blocks?limit=1`)
+    mockTestnetServer.onGet('/blocks?limit=1')
       .reply(200, {
         items: [
           {
@@ -298,7 +298,7 @@ describe('sendWithoutBoxId test', () => {
         ],
       });
 
-    mockTestnetServer.onPost(`/transactions/send`)
+    mockTestnetServer.onPost('/transactions/send')
       .reply(200, { id: '1234' });
 
     try {
@@ -336,39 +336,7 @@ describe('sendWithoutBoxId test', () => {
     mockTestnetServer.onGet(`/transactions/boxes/byAddress/unspent/${addressFromSK(testSks[1], true)}`)
       .reply(200, [testAddressBoxes[2], testAddressBoxes[3]]);
 
-    mockTestnetServer.onGet(`/blocks?limit=1`)
-    .reply(200, {
-      items: [
-        {
-          id: '147de5d16ea6d346f0eaad7884e12c12a04d90073bb33475f4ff37ed299de037',
-          height: currentHeight,
-          timestamp: 1560782243190,
-          transactionsCount: 1,
-          miner: { address: 'mPdcmWTSJ6EGzGvG9xmdoYVsTGM6tk2fNpLVFePUU14nENm4mkbxMiuMLqrhSBYohBWkMbRdgdPpJaPy', name: 'gdPpJaPy' },
-          size: 3073,
-          difficulty: 13685489664,
-          minerReward: 75000000000,
-        },
-      ],
-    });
-
-
-    mockTestnetServer.onPost(`/transactions/send`)
-      .reply(200, { id: '1234' });
-
-    const { data } = await sendWithoutBoxId(testAddress, 1200, 100, testSks, true);
-
-    expect(data).toEqual({ id: '1234' });
-  });
-
-  it('should send transaction without boxes with string sk', async () => {
-    const mockTestnetServer = new MockAdapter(testNetServer);
-    const currentHeight = 73319;
-
-    mockTestnetServer.onGet(`/transactions/boxes/byAddress/unspent/${testAddress}`)
-      .reply(200, [{ id: '1', value: 500 }, { id: '2', value: 500 }]);
-
-    mockTestnetServer.onGet(`/blocks?limit=1`)
+    mockTestnetServer.onGet('/blocks?limit=1')
       .reply(200, {
         items: [
           {
@@ -384,7 +352,39 @@ describe('sendWithoutBoxId test', () => {
         ],
       });
 
-    mockTestnetServer.onPost(`/transactions/send`)
+
+    mockTestnetServer.onPost('/transactions/send')
+      .reply(200, { id: '1234' });
+
+    const { data } = await sendWithoutBoxId(testAddress, 1200, 100, testSks, true);
+
+    expect(data).toEqual({ id: '1234' });
+  });
+
+  it('should send transaction without boxes with string sk', async () => {
+    const mockTestnetServer = new MockAdapter(testNetServer);
+    const currentHeight = 73319;
+
+    mockTestnetServer.onGet(`/transactions/boxes/byAddress/unspent/${testAddress}`)
+      .reply(200, [{ id: '1', value: 500 }, { id: '2', value: 500 }]);
+
+    mockTestnetServer.onGet('/blocks?limit=1')
+      .reply(200, {
+        items: [
+          {
+            id: '147de5d16ea6d346f0eaad7884e12c12a04d90073bb33475f4ff37ed299de037',
+            height: currentHeight,
+            timestamp: 1560782243190,
+            transactionsCount: 1,
+            miner: { address: 'mPdcmWTSJ6EGzGvG9xmdoYVsTGM6tk2fNpLVFePUU14nENm4mkbxMiuMLqrhSBYohBWkMbRdgdPpJaPy', name: 'gdPpJaPy' },
+            size: 3073,
+            difficulty: 13685489664,
+            minerReward: 75000000000,
+          },
+        ],
+      });
+
+    mockTestnetServer.onPost('/transactions/send')
       .reply(200, { id: '1234' });
 
     const { data } = await sendWithoutBoxId(testAddress, 550, 100, testSK, true);
@@ -408,7 +408,7 @@ describe('createOutputs test', () => {
     const boxes = [
       {
         id: 1,
-        amount: 426,
+        value: 426,
       },
     ];
 

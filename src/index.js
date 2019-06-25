@@ -42,7 +42,7 @@ export const getBoxesFromAddress = async (address, testNet = false) => {
 };
 
 /**
- * @param  {Array[object({ id: number, amount: number })]} boxes
+ * @param  {Array} boxes
  * @param  {Number} amount
  * @param  {Number} fee
  */
@@ -64,7 +64,7 @@ export const getSolvingBoxes = (boxes, amount, fee) => {
     resultValue += boxes[key].value;
     resultBoxes = [...resultBoxes, boxes[key]];
 
-    if (resultValue >= Number(amount) + Number(fee)) {
+    if (resultValue >= amount + fee) {
       hasBoxes = true;
       break;
     }
@@ -74,11 +74,11 @@ export const getSolvingBoxes = (boxes, amount, fee) => {
     return null;
   }
 
-  return resultBoxes.map(box => ({ id: box.id, amount: box.value, sk: box.sk }));
+  return resultBoxes;
 };
 
 /**
- * @param  {Array[[object({ id: number, amount: number })]]} boxes
+ * @param  {Array} boxes
  * @param  {String} sk
  */
 
@@ -196,7 +196,7 @@ export const createOutputs = (recipient, amount, fee, boxesToSpend, chargeAddres
     throw new TypeError('Bad params');
   }
 
-  const globalAmount = boxesToSpend.reduce((sum, box) => sum + box.amount, 0);
+  const globalValue = boxesToSpend.reduce((sum, { value }) => sum + value, 0);
   const outputs = [
     {
       address: recipient,
@@ -204,7 +204,7 @@ export const createOutputs = (recipient, amount, fee, boxesToSpend, chargeAddres
     },
     {
       address: chargeAddress,
-      amount: globalAmount - amount - fee,
+      amount: globalValue - amount - fee,
     },
   ];
 
@@ -212,7 +212,7 @@ export const createOutputs = (recipient, amount, fee, boxesToSpend, chargeAddres
 };
 
 /**
- * @param  {Array[object({ id: number, amount: number, sk(hex): string })]} boxesToSpend
+ * @param  {Array} boxesToSpend
  * @param  {Array} outputs
  * @param  {Number} fee
  * @param  {Number} height
@@ -237,8 +237,7 @@ export const createTransaction = (boxesToSpend, outputs, fee, height) => {
   const ergoTreeBytes = Buffer.from([0x00, 0x08, 0xcd]);
   const minerErgoTree = constants.minerTree;
 
-  for (const i in outputs) {
-    const { address, amount } = outputs[i];
+  Object.values(outputs).forEach(({ address, amount }) => {
     const tree = Buffer.concat([ergoTreeBytes, pkFromAddress(address)]).toString('hex');
 
     unsignedTransaction.outputs.push({
@@ -248,7 +247,7 @@ export const createTransaction = (boxesToSpend, outputs, fee, height) => {
       value: amount,
       creationHeight: height,
     });
-  }
+  });
 
   if (fee !== null && fee !== undefined) {
     unsignedTransaction.outputs.push({
@@ -285,7 +284,7 @@ export const createTransaction = (boxesToSpend, outputs, fee, height) => {
  * @param  {String} recipient
  * @param  {Number} amount
  * @param  {Number} fee
- * @param  {Array[object({ id: number, amount: number, sk(hex): string })]} boxesToSpend
+ * @param  {Array} boxesToSpend
  * @param  {String} chargeAddress
  * @param  {Number} height
  */
@@ -306,6 +305,45 @@ export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddr
   const signedTransaction = createTransaction(boxesToSpend, outputs, fee, height);
 
   return signedTransaction;
+};
+
+/**
+ * @param  {String} recipient
+ * @param  {Number} amount
+ * @param  {Number} fee
+ * @param  {Array} boxesToSpend
+ * @param  {String} chargeAddress
+ * @param  {Number} height
+ * @param  {Boolean} testNet = false
+ */
+
+export const sendTransaction = async (
+  recipient, amount, fee, boxesToSpend, chargeAddress, height, testNet = false
+) => {
+  if (
+    is.not.string(recipient)
+    || is.not.number(amount)
+    || is.not.number(fee)
+    || is.not.array(boxesToSpend)
+    || is.not.string(chargeAddress)
+    || is.not.number(height)
+  ) {
+    throw new TypeError('Bad params');
+  }
+
+  const signedTransaction = formTransaction(
+    recipient, amount, fee, boxesToSpend, chargeAddress, height
+  );
+
+  const server = testNet ? testNetServer : mainNetServer;
+
+  const res = await server({
+    method: 'POST',
+    url: '/transactions/send',
+    data: signedTransaction,
+  });
+
+  return res;
 };
 
 /**
@@ -347,43 +385,4 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = fal
   const height = await getCurrentHeight(testNet);
 
   return sendTransaction(recipient, amount, fee, resolveBoxes, chargeAddress, height, testNet);
-};
-
-/**
- * @param  {String} recipient
- * @param  {Number} amount
- * @param  {Number} fee
- * @param  {Array[object({ id: number, amount: number, sk(hex): string })]} boxesToSpend
- * @param  {String} chargeAddress
- * @param  {Number} height
- * @param  {Boolean} testNet = false
- */
-
-export const sendTransaction = async (
-  recipient, amount, fee, boxesToSpend, chargeAddress, height, testNet = false
-) => {
-  if (
-    is.not.string(recipient)
-    || is.not.number(amount)
-    || is.not.number(fee)
-    || is.not.array(boxesToSpend)
-    || is.not.string(chargeAddress)
-    || is.not.number(height)
-  ) {
-    throw new TypeError('Bad params');
-  }
-
-  const signedTransaction = formTransaction(
-    recipient, amount, fee, boxesToSpend, chargeAddress, height
-  );
-
-  const server = testNet ? testNetServer : mainNetServer;
-
-  const res = await server({
-    method: 'POST',
-    url: '/transactions/send',
-    data: signedTransaction,
-  });
-
-  return res;
 };
