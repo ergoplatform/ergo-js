@@ -23,7 +23,7 @@ export const outputBytes = (out) => {
   return res;
 };
 
-export const valueSerialize = val => '';
+export const valueSerialize = () => '';
 
 export const inputBytes = (i) => {
   let res = Buffer.from(i.boxId, 'hex');
@@ -31,14 +31,16 @@ export const inputBytes = (i) => {
   res = Buffer.concat([res, intToVlq(sp.proofBytes.length)]);
   res = Buffer.concat([res, Buffer.from(sp.proofBytes, 'hex')]);
   res = Buffer.concat([res, intToVlq(sp.extension.length)]);
-  for (const k in sp.extension) {
+
+  Object.keys(sp.extension).forEach((k) => {
     res += intToVlq(k);
     res += valueSerialize(sp.extension[k]);
-  }
+  });
+
   return res;
 };
 
-export const distinctTokenList = outputs => []; // TODO: rework this
+export const distinctTokenList = () => []; // TODO: rework this
 
 export const sortBoxes = (boxes) => {
   const sortableKeys = Object.keys(boxes).sort((a, b) => boxes[b].value - boxes[a].value);
@@ -48,26 +50,28 @@ export const sortBoxes = (boxes) => {
 
 export const serializeTx = (tx) => {
   let res = intToVlq(tx.inputs.length);
-  for (const key in tx.inputs) {
-    res = Buffer.concat([res, inputBytes(tx.inputs[key])]);
-  }
+
+  Object.values(tx.inputs).forEach((v) => {
+    res = Buffer.concat([res, inputBytes(v)]);
+  });
   res = Buffer.concat([res, intToVlq(tx.dataInputs.length)]);
 
-  for (const i in tx.dataInputs) {
+  tx.dataInputs.forEach((i) => {
     res = Buffer.concat([res, Buffer.from(i.boxId, 'hex')]);
-  }
+  });
 
   const distinctIds = distinctTokenList(tx.outputs);
 
   res = Buffer.concat([res, intToVlq(distinctIds.length)]);
 
-  for (const d in distinctIds) {
-    res = Buffer.concat([res, Buffer.from(distinctIds[d], 'hex')]);
-  }
+  Object.values(distinctIds).forEach((v) => {
+    res = Buffer.concat([res, Buffer.from(v, 'hex')]);
+  });
 
   res = Buffer.concat([res, intToVlq(tx.outputs.length)]);
-  for (const key in tx.outputs) {
-    res = Buffer.concat([res, outputBytes(tx.outputs[key])]);
-  }
+  Object.values(tx.outputs).forEach((v) => {
+    res = Buffer.concat([res, outputBytes(v)]);
+  });
+
   return res;
 };

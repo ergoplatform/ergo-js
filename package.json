@@ -55,7 +55,7 @@
     }
   },
   "scripts": {
-    "test": "jest",
+    "test": "npx eslint -c .eslintrc.yml ./src ./tests && jest",
     "build": "webpack --mode production",
     "size": "npm run build && size-limit"
   },
