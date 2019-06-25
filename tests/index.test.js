@@ -9,6 +9,7 @@ import {
   importSkIntoBoxes,
   sendWithoutBoxId,
   getBoxesFromFewSks,
+  createOutputs,
 } from '../src/index';
 import { sign, verify } from '../src/ergoSchnorr';
 import { testNetServer } from '../src/api';
@@ -31,7 +32,7 @@ test('simple signature test vector', () => {
   expect(verify(msgBytes, signBytes, pkBytes)).toBe(true);
 });
 
-describe('getCurrentHeight function', () => {
+describe('getCurrentHeight test', () => {
   it('should reply 200 and return current height', async () => {
     const mock = new MockAdapter(testNetServer);
     const currentHeight = 73319;
@@ -57,7 +58,7 @@ describe('getCurrentHeight function', () => {
   });
 });
 
-describe('getBoxesFromAddress function', () => {
+describe('getBoxesFromAddress test', () => {
   it('get error if put bad params', async () => {
     let error;
     try {
@@ -80,7 +81,7 @@ describe('getBoxesFromAddress function', () => {
   });
 });
 
-describe('getSolvingBoxes function', () => {
+describe('getSolvingBoxes test', () => {
   const mockBoxes = [
     {
       id: '2',
@@ -112,7 +113,7 @@ describe('getSolvingBoxes function', () => {
   });
 });
 
-describe('importSkIntoBoxes function', () => {
+describe('importSkIntoBoxes test', () => {
   const mockBoxes = [
     {
       id: '2',
@@ -145,7 +146,7 @@ describe('importSkIntoBoxes function', () => {
   });
 });
 
-describe('addressFromSK function', () => {
+describe('addressFromSK test', () => {
   it('should return error with bad params', () => {
     expect(() => addressFromSK(testSK, [])).toThrow(TypeError);
     expect(() => addressFromSK(12, true)).toThrow(TypeError);
@@ -156,7 +157,7 @@ describe('addressFromSK function', () => {
   });
 });
 
-describe('getBoxesFromFewSks', () => {
+describe('getBoxesFromFewSks test', () => {
   const testSks = ['123', '345'];
   const testAddressBoxes = [
     { id: '1', value: 500 },
@@ -227,7 +228,7 @@ describe('getBoxesFromFewSks', () => {
   });
 });
 
-describe('sendWithoutBoxId function', () => {
+describe('sendWithoutBoxId test', () => {
   it('should return error with bad params', async () => {
     let error; let error2; let error3; let error4;
     let error5;
@@ -389,5 +390,39 @@ describe('sendWithoutBoxId function', () => {
     const { data } = await sendWithoutBoxId(testAddress, 550, 100, testSK, true);
 
     expect(data).toEqual({ id: '1234' });
+  });
+});
+
+describe('createOutputs test', () => {
+  it('should return error with bad params', () => {
+    expect(() => createOutputs(3, 12, 1, [], '123')).toThrow(TypeError);
+    expect(() => createOutputs('3', '12', 1, [], '123')).toThrow(TypeError);
+    expect(() => createOutputs('3', 12, '1', [], '123')).toThrow(TypeError);
+    expect(() => createOutputs('3', 12, 1, null, '123')).toThrow(TypeError);
+  });
+
+  it('should return outputs', () => {
+    const recipient = 'adsfko123ads';
+    const chargeAddress = 'asd123sdg';
+    const amount = 123;
+    const boxes = [
+      {
+        id: 1,
+        amount: 426,
+      },
+    ];
+
+    const outputs = [
+      {
+        address: recipient,
+        amount,
+      },
+      {
+        address: chargeAddress,
+        amount: 300,
+      },
+    ];
+
+    expect(createOutputs(recipient, amount, 3, boxes, chargeAddress)).toEqual(outputs);
   });
 });

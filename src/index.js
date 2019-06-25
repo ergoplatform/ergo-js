@@ -176,22 +176,22 @@ export const getBoxesFromFewSks = async (sks, amount, fee, testNet = false) => {
 };
 
 /**
+ * A method that creates outputs
+ *
  * @param  {String} recipient
  * @param  {Number} amount
  * @param  {Number} fee
- * @param  {Array[object({ id: number, amount: number, sk(hex): string })]} boxesToSpend
+ * @param  {Array} boxesToSpend
  * @param  {String} chargeAddress
- * @param  {Number} height
  */
 
-export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddress, height) => {
+export const createOutputs = (recipient, amount, fee, boxesToSpend, chargeAddress) => {
   if (
     is.not.string(recipient)
     || is.not.number(amount)
     || is.not.number(fee)
     || is.not.array(boxesToSpend)
     || is.not.string(chargeAddress)
-    || is.not.number(height)
   ) {
     throw new TypeError('Bad params');
   }
@@ -208,7 +208,7 @@ export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddr
     },
   ];
 
-  return createTransaction(boxesToSpend, outputs, fee, height);
+  return outputs;
 };
 
 /**
@@ -285,6 +285,33 @@ export const createTransaction = (boxesToSpend, outputs, fee, height) => {
  * @param  {String} recipient
  * @param  {Number} amount
  * @param  {Number} fee
+ * @param  {Array[object({ id: number, amount: number, sk(hex): string })]} boxesToSpend
+ * @param  {String} chargeAddress
+ * @param  {Number} height
+ */
+
+export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddress, height) => {
+  if (
+    is.not.string(recipient)
+    || is.not.number(amount)
+    || is.not.number(fee)
+    || is.not.array(boxesToSpend)
+    || is.not.string(chargeAddress)
+    || is.not.number(height)
+  ) {
+    throw new TypeError('Bad params');
+  }
+
+  const outputs = createOutputs(recipient, amount, fee, boxesToSpend, chargeAddress);
+  const signedTransaction = createTransaction(boxesToSpend, outputs, fee, height);
+
+  return signedTransaction;
+};
+
+/**
+ * @param  {String} recipient
+ * @param  {Number} amount
+ * @param  {Number} fee
  * @param  {Array[String] || String} sk
  * @param  {Boolean} testNet
  */
@@ -333,8 +360,8 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = fal
  */
 
 export const sendTransaction = async (
-    recipient, amount, fee, boxesToSpend, chargeAddress, height, testNet = false
-  ) => {
+  recipient, amount, fee, boxesToSpend, chargeAddress, height, testNet = false
+) => {
   if (
     is.not.string(recipient)
     || is.not.number(amount)
@@ -354,7 +381,7 @@ export const sendTransaction = async (
 
   const res = await server({
     method: 'POST',
-    url: `/transactions/send`,
+    url: '/transactions/send',
     data: signedTransaction,
   });
 
