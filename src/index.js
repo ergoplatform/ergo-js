@@ -3,7 +3,7 @@ import blake from 'blakejs';
 import bs58 from 'bs58';
 import { ec } from 'elliptic';
 import {
-  uniq, flatMap, map, reduce,
+  uniq, flatMap, map, reduce, isEmpty,
 } from 'lodash/fp';
 import is from 'is_js';
 import constants from './constants';
@@ -15,13 +15,21 @@ const { curve } = ec('secp256k1');
 
 /**
  * A method that selects all the assets in the boxes
- * and returns array with their id and amount.
+ * and returns array with tokenId and amount.
  *
  * @param  {Array} boxes
  * @return {Array[{ tokenId: String, amount: Number }]}
  */
 
 export const getAssetsFromBoxes = (boxes) => {
+  if (is.not.array(boxes)) {
+    throw new TypeError('Bad params');
+  }
+
+  if (isEmpty(boxes)) {
+    return [];
+  }
+
   const allAssets = boxes
     |> flatMap(box => box.assets);
 

@@ -323,10 +323,10 @@ describe('sendWithoutBoxId test', () => {
     const testSks = ['123', '345'];
     const currentHeight = 73319;
     const testAddressBoxes = [
-      { id: '1', value: 500 },
-      { id: '2', value: 500 },
-      { id: '3', value: 500 },
-      { id: '4', value: 500 },
+      { id: '1', value: 500, assets: [] },
+      { id: '2', value: 500, assets: [] },
+      { id: '3', value: 500, assets: [] },
+      { id: '4', value: 500, assets: [] },
     ];
 
     const mockTestnetServer = new MockAdapter(testNetServer);
@@ -367,7 +367,7 @@ describe('sendWithoutBoxId test', () => {
     const currentHeight = 73319;
 
     mockTestnetServer.onGet(`/transactions/boxes/byAddress/unspent/${testAddress}`)
-      .reply(200, [{ id: '1', value: 500 }, { id: '2', value: 500 }]);
+      .reply(200, [{ id: '1', value: 500, assets: [] }, { id: '2', value: 500, assets: [] }]);
 
     mockTestnetServer.onGet('/blocks?limit=1')
       .reply(200, {
@@ -410,6 +410,7 @@ describe('createOutputs test', () => {
       {
         id: 1,
         value: 426,
+        assets: [],
       },
     ];
 
@@ -417,10 +418,12 @@ describe('createOutputs test', () => {
       {
         address: recipient,
         amount,
+        assets: [],
       },
       {
         address: chargeAddress,
         amount: 300,
+        assets: [],
       },
     ];
 
