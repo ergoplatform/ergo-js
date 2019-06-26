@@ -10,6 +10,7 @@ import {
   sendWithoutBoxId,
   getBoxesFromFewSks,
   createOutputs,
+  getAssetsFromBoxes,
 } from '../src/index';
 import { sign, verify } from '../src/ergoSchnorr';
 import { testNetServer } from '../src/api';
@@ -424,5 +425,49 @@ describe('createOutputs test', () => {
     ];
 
     expect(createOutputs(recipient, amount, 3, boxes, chargeAddress)).toEqual(outputs);
+  });
+});
+
+describe('getAssetsFromBoxes', () => {
+  it('should return assets', () => {
+    const boxes = [
+      {
+        box: 1,
+        assets: [
+          {
+            tokenId: '5dd2b04797ea4bff335867385bfd8626d364b89ce58ea36b4ae54af67f9b7fd2',
+            amount: 3,
+          },
+          {
+            tokenId: '6ac715c2efdd5938d4136d9c448b50b1b1475d2cca493674b5ce7b779cd6f041',
+            amount: 4,
+          },
+        ],
+      },
+      {
+        box: 2,
+        assets: [
+          {
+            tokenId: '5dd2b04797ea4bff335867385bfd8626d364b89ce58ea36b4ae54af67f9b7fd2',
+            amount: 6,
+          },
+          {
+            tokenId: '6ac715c2efdd5938d4136d9c448b50b1b1475d2cca493674b5ce7b779cd6f041',
+            amount: 10,
+          },
+        ],
+      },
+    ];
+
+    expect(getAssetsFromBoxes(boxes)).toEqual([
+      {
+        tokenId: '5dd2b04797ea4bff335867385bfd8626d364b89ce58ea36b4ae54af67f9b7fd2',
+        amount: 9,
+      },
+      {
+        tokenId: '6ac715c2efdd5938d4136d9c448b50b1b1475d2cca493674b5ce7b779cd6f041',
+        amount: 14,
+      },
+    ]);
   });
 });

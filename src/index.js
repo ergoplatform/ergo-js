@@ -2,6 +2,9 @@ import BN from 'bn.js';
 import blake from 'blakejs';
 import bs58 from 'bs58';
 import { ec } from 'elliptic';
+import {
+  uniq, flatMap, map, reduce,
+} from 'lodash/fp';
 import is from 'is_js';
 import constants from './constants';
 import { serializeTx, sortBoxes } from './supportFunctions';
@@ -9,6 +12,35 @@ import { sign } from './ergoSchnorr';
 import { testNetServer, mainNetServer } from './api';
 
 const { curve } = ec('secp256k1');
+
+/**
+ * A method that selects all the assets in the boxes
+ * and returns array with their id and amount.
+ *
+ * @param  {Array} boxes
+ * @return {Array[{ tokenId: String, amount: Number }]}
+ */
+
+export const getAssetsFromBoxes = (boxes) => {
+  const allAssets = boxes
+    |> flatMap(box => box.assets);
+
+  const allTokensIds = allAssets
+    |> map(asset => asset.tokenId)
+    |> uniq;
+
+  const initialValue = allTokensIds
+    |> reduce((acc, asset) => ({ ...acc, [asset]: { tokenId: asset, amount: 0 } }), {});
+
+  const assets = allAssets
+    |> reduce((acc, { tokenId, amount }) => ({
+      ...acc,
+      [tokenId]: { tokenId, amount: acc[tokenId].amount + amount },
+    }), initialValue)
+    |> Object.values;
+
+  return assets;
+};
 
 export const getCurrentHeight = async (testNet = false) => {
   const server = testNet ? testNetServer : mainNetServer;
@@ -197,14 +229,18 @@ export const createOutputs = (recipient, amount, fee, boxesToSpend, chargeAddres
   }
 
   const globalValue = boxesToSpend.reduce((sum, { value }) => sum + value, 0);
+  const boxAssets = getAssetsFromBoxes(boxesToSpend);
+
   const outputs = [
     {
       address: recipient,
       amount,
+      assets: [],
     },
     {
       address: chargeAddress,
       amount: globalValue - amount - fee,
+      assets: boxAssets,
     },
   ];
 
@@ -237,12 +273,12 @@ export const createTransaction = (boxesToSpend, outputs, fee, height) => {
   const ergoTreeBytes = Buffer.from([0x00, 0x08, 0xcd]);
   const minerErgoTree = constants.minerTree;
 
-  Object.values(outputs).forEach(({ address, amount }) => {
+  Object.values(outputs).forEach(({ address, amount, assets }) => {
     const tree = Buffer.concat([ergoTreeBytes, pkFromAddress(address)]).toString('hex');
 
     unsignedTransaction.outputs.push({
       ergoTree: tree,
-      assets: [],
+      assets,
       additionalRegisters: {},
       value: amount,
       creationHeight: height,
