@@ -31,10 +31,10 @@ export const getAssetsFromBoxes = (boxes) => {
   }
 
   const allAssets = boxes
-    |> flatMap(box => box.assets);
+    |> flatMap((box) => box.assets);
 
   const allTokensIds = allAssets
-    |> map(asset => asset.tokenId)
+    |> map((asset) => asset.tokenId)
     |> uniq;
 
   const initialValue = allTokensIds
@@ -131,7 +131,7 @@ export const importSkIntoBoxes = (boxes, sk) => {
     throw new TypeError('Bad params');
   }
 
-  return boxes.map(box => ({ ...box, sk }));
+  return boxes.map((box) => ({ ...box, sk }));
 };
 
 /**
