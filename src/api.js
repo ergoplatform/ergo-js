@@ -22,8 +22,8 @@ export const testNetServer = axios.create({
 });
 
 testNetServer.interceptors.response.use(
-  response => Promise.resolve(response),
-  error => Promise.reject(new NetworkError(error.response || {})),
+  (response) => Promise.resolve(response),
+  (error) => Promise.reject(new NetworkError(error.response || {})),
 );
 
 export const mainNetServer = axios.create({
@@ -35,6 +35,6 @@ export const mainNetServer = axios.create({
 });
 
 mainNetServer.interceptors.response.use(
-  response => Promise.resolve(response),
-  error => Promise.reject(new NetworkError(error.response || {})),
+  (response) => Promise.resolve(response),
+  (error) => Promise.reject(new NetworkError(error.response || {})),
 );
