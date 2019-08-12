@@ -44,8 +44,18 @@ export const distinctTokenList = () => []; // TODO: rework this
 
 export const sortBoxes = (boxes) => {
   const sortableKeys = Object.keys(boxes).sort((a, b) => boxes[b].value - boxes[a].value);
+  const sortableBoxes = sortableKeys.map(k => boxes[k]);
 
-  return sortableKeys;
+  return sortableBoxes;
+};
+
+export const getTenBoxesOrCurrent = (currBoxes, allBoxes) => {
+  if (currBoxes.length > 10) {
+    return currBoxes;
+  }
+  const tenBoxesIncludeCurrent = currBoxes.concat(allBoxes.slice(currBoxes.length, 10));
+
+  return tenBoxesIncludeCurrent;
 };
 
 export const serializeTx = (tx) => {
