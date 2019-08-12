@@ -85,12 +85,48 @@ describe('getBoxesFromAddress test', () => {
 describe('getSolvingBoxes test', () => {
   const mockBoxes = [
     {
-      id: '3',
-      value: '555',
+      id: '1',
+      value: 101,
     },
     {
       id: '2',
-      value: '444',
+      value: 91,
+    },
+    {
+      id: '3',
+      value: 81,
+    },
+    {
+      id: '4',
+      value: 71,
+    },
+    {
+      id: '5',
+      value: 61,
+    },
+    {
+      id: '6',
+      value: 51,
+    },
+    {
+      id: '7',
+      value: 41,
+    },
+    {
+      id: '8',
+      value: 31,
+    },
+    {
+      id: '9',
+      value: 21,
+    },
+    {
+      id: '10',
+      value: 11,
+    },
+    {
+      id: '11',
+      value: 10,
     },
   ];
 
@@ -101,15 +137,15 @@ describe('getSolvingBoxes test', () => {
     expect(() => getSolvingBoxes([], '12', '1')).toThrow(TypeError);
   });
 
-  it('should return one box', () => {
-    expect(getSolvingBoxes(mockBoxes, 12, 1)).toEqual([mockBoxes[0]]);
+  it('should return 10 boxes if have amount in first 10 boxes', () => {
+    expect(getSolvingBoxes(mockBoxes, 24, 1)).toEqual(mockBoxes.slice(0, 10));
   });
 
-  it('should return 2 boxes', () => {
-    expect(getSolvingBoxes(mockBoxes, 842, 1)).toEqual([...mockBoxes]);
+  it('should return all boxes', () => {
+    expect(getSolvingBoxes(mockBoxes, 569, 1)).toEqual([...mockBoxes]);
   });
 
-  it('get error if boxes dont have solution amount', () => {
+  it('should return null if boxes dont have solution amount', () => {
     expect(getSolvingBoxes(mockBoxes, 1212919231231212, 1)).toEqual(null);
   });
 });
