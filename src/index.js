@@ -7,7 +7,7 @@ import {
 } from 'lodash/fp';
 import is from 'is_js';
 import constants from './constants';
-import { serializeTx, sortBoxes } from './supportFunctions';
+import { serializeTx, sortBoxes, getTenBoxesOrCurrent } from './utils';
 import { sign } from './ergoSchnorr';
 import { testNetServer, mainNetServer } from './api';
 
@@ -31,10 +31,10 @@ export const getAssetsFromBoxes = (boxes) => {
   }
 
   const allAssets = boxes
-    |> flatMap(box => box.assets);
+    |> flatMap((box) => box.assets);
 
   const allTokensIds = allAssets
-    |> map(asset => asset.tokenId)
+    |> map((asset) => asset.tokenId)
     |> uniq;
 
   const initialValue = allTokensIds
@@ -97,14 +97,16 @@ export const getSolvingBoxes = (boxes, amount, fee) => {
     throw new TypeError('Bad params');
   }
 
-  let resultValue = 0;
-  let resultBoxes = [];
+  let boxesCollValue = 0;
+  const boxesColl = [];
   let hasBoxes = false;
-  for (const key of sortBoxes(boxes)) {
-    resultValue += boxes[key].value;
-    resultBoxes = [...resultBoxes, boxes[key]];
+  const sortedBoxes = sortBoxes(boxes);
 
-    if (resultValue >= amount + fee) {
+  for (const box of sortedBoxes) {
+    boxesCollValue += box.value;
+    boxesColl.push(box);
+
+    if (boxesCollValue >= amount + fee) {
       hasBoxes = true;
       break;
     }
@@ -113,6 +115,8 @@ export const getSolvingBoxes = (boxes, amount, fee) => {
   if (!hasBoxes) {
     return null;
   }
+
+  const resultBoxes = getTenBoxesOrCurrent(boxesColl, sortedBoxes);
 
   return resultBoxes;
 };
@@ -131,7 +135,7 @@ export const importSkIntoBoxes = (boxes, sk) => {
     throw new TypeError('Bad params');
   }
 
-  return boxes.map(box => ({ ...box, sk }));
+  return boxes.map((box) => ({ ...box, sk }));
 };
 
 /**
