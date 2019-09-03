@@ -4,6 +4,5 @@ node_modules
 .vscode
 *.log*
 index.js
-.npmignore
 /dist/index.html
 /coverage
