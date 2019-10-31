@@ -260,14 +260,15 @@ export const createOutputs = (recipient, amount, fee, boxesToSpend, chargeAddres
     amount,
     assets: [],
   });
-  if (chargeAmount !== 0) {
+
+  if (chargeAmount > 0) {
     outputs.push({
       address: chargeAddress,
       amount: globalValue - amount - fee,
       assets: boxAssets,
     });
-  } else if (boxAssets.length > 0) {
-    throw new Error('Not enough ERGS to keep tokens');
+  } else if (chargeAmount < 0 || boxAssets.length > 0) {
+    throw new Error('Not enough ERGS');
   }
 
   return outputs;
