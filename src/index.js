@@ -116,9 +116,7 @@ export const getSolvingBoxes = (boxes, amount, fee) => {
     return null;
   }
 
-  const resultBoxes = getTenBoxesOrCurrent(boxesColl, sortedBoxes);
-
-  return resultBoxes;
+  return getTenBoxesOrCurrent(boxesColl, sortedBoxes);
 };
 
 /**
@@ -166,6 +164,19 @@ export const addressFromPK = (pk, testNet = false) => {
   const address = Buffer.concat([prefixByte, contentBytes, checksum]).slice(0, 38);
 
   return bs58.encode(address);
+};
+
+export const checkAddressValidity = (address) => {
+  try {
+    const bytes = bs58.decode(address);
+    const size = bytes.length;
+    const script = bytes.slice(0, size - 4);
+    const checksum = bytes.slice(size - 4, size);
+    const calculatedChecksum = Buffer.from(blake.blake2b(script, null, 32), 'hex').slice(0, 4);
+    return calculatedChecksum.toString('hex') === checksum.toString('hex');
+  } catch (e) {
+    return false;
+  }
 };
 
 /**
