@@ -484,8 +484,29 @@ describe('createOutputs test', () => {
 
     expect(createOutputs(recipient, amount, 3, boxes, chargeAddress)).toEqual(outputs);
   });
-});
 
+  it('should not return charge output if there is no charge', () => {
+    const recipient = 'adsfko123ads';
+    const chargeAddress = 'asd123sdg';
+    const amount = 426;
+    const fee = 3;
+    const boxes = [
+      {
+        id: 1,
+        value: 429,
+        assets: [],
+      },
+    ];
+    const outputs = [
+      {
+        address: recipient,
+        amount,
+        assets: [],
+      },
+    ];
+    expect(createOutputs(recipient, amount, fee, boxes, chargeAddress)).toEqual(outputs);
+  });
+});
 describe('getAssetsFromBoxes', () => {
   it('should return assets', () => {
     const boxes = [
