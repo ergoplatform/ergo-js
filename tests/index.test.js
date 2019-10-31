@@ -25,6 +25,11 @@ test('simple address validity test', () => {
     ['9fRusAarL1KkrWQVsxSRVYnvWxaAT2A96cKtNn9tvPh5XUyCisr', true],
     ['9fRusAarL1KkrWQVsxSRVYnvWxaAT2A96cKtNn9tvPh5XUyCiss', false],
     ['9fRusAarL1KkrWQVsxSRVYnvWxaAT2A96c', false],
+    ['', false],
+    [1234, false],
+    [Infinity, false],
+    [true, false],
+    [null, false],
   ];
 
   addresses.forEach((address) => {
