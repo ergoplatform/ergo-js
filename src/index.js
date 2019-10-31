@@ -253,19 +253,23 @@ export const createOutputs = (recipient, amount, fee, boxesToSpend, chargeAddres
 
   const globalValue = boxesToSpend.reduce((sum, { value }) => sum + value, 0);
   const boxAssets = getAssetsFromBoxes(boxesToSpend);
+  const chargeAmount = globalValue - amount - fee;
+  const outputs = [];
+  outputs.push({
+    address: recipient,
+    amount,
+    assets: [],
+  });
 
-  const outputs = [
-    {
-      address: recipient,
-      amount,
-      assets: [],
-    },
-    {
+  if (chargeAmount > 0) {
+    outputs.push({
       address: chargeAddress,
       amount: globalValue - amount - fee,
       assets: boxAssets,
-    },
-  ];
+    });
+  } else if (chargeAmount < 0 || boxAssets.length > 0) {
+    throw new Error('Not enough ERGS');
+  }
 
   return outputs;
 };
