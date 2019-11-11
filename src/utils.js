@@ -12,12 +12,18 @@ export const intToVlq = (num) => {
   return res;
 };
 
-export const outputBytes = (out) => {
+export const outputBytes = (out, tokenIds) => {
   let res = intToVlq(out.value);
   res = Buffer.concat([res, Buffer.from(out.ergoTree, 'hex')]);
   res = Buffer.concat([res, intToVlq(out.creationHeight)]);
 
   res = Buffer.concat([res, intToVlq(out.assets.length)]);
+  for (let i=0; i < out.assets.length; i+=1){
+    let t = out.assets[i].tokenId;
+    let n = tokenIds.indexOf(t);
+    res = Buffer.concat([res, intToVlq(n)]);
+    res = Buffer.concat([res, intToVlq(out.assets[i].amount)]);
+  }
   const k = out.additionalRegisters.length;
   res = Buffer.concat([res, intToVlq(k)]);
   return res;
@@ -40,7 +46,20 @@ export const inputBytes = (i) => {
   return res;
 };
 
-export const distinctTokenList = () => []; // TODO: rework this
+export const distinctTokenList = (outputs) => {
+  let tokenList = outputs.map((x) => x.assets.map(a => a.tokenId));
+  let flatTokenList = tokenList.flat();
+  let seenTokens = new Set();
+  let res = [];
+  for( let i=0; i < flatTokenList.length; i += 1){
+    let currId = flatTokenList[i];
+    if(!(currId in seenTokens)){
+      res.push(currId);
+      seenTokens.add(currId);
+    }
+  }
+  return res;
+};
 
 export const sortBoxes = (boxes) => {
   const sortableKeys = Object.keys(boxes).sort((a, b) => boxes[b].value - boxes[a].value);
@@ -80,7 +99,7 @@ export const serializeTx = (tx) => {
 
   res = Buffer.concat([res, intToVlq(tx.outputs.length)]);
   Object.values(tx.outputs).forEach((v) => {
-    res = Buffer.concat([res, outputBytes(v)]);
+    res = Buffer.concat([res, outputBytes(v, distinctIds)]);
   });
 
   return res;

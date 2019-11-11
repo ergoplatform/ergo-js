@@ -2,9 +2,6 @@ import BN from 'bn.js';
 import blake from 'blakejs';
 import bs58 from 'bs58';
 import { ec } from 'elliptic';
-import {
-  uniq, flatMap, map, reduce, isEmpty,
-} from 'lodash/fp';
 import is from 'is_js';
 import constants from './constants';
 import { serializeTx, sortBoxes, getTenBoxesOrCurrent } from './utils';
@@ -26,28 +23,21 @@ export const getAssetsFromBoxes = (boxes) => {
     throw new TypeError('Bad params');
   }
 
-  if (isEmpty(boxes)) {
-    return [];
+  let asset_dict = new Object();
+  for (let i = 0; i < boxes.length; i += 1){
+    for(let j = 0; j < boxes[i].assets.length; j += 1){
+      let currAsset = boxes[i].assets[j];
+
+      if(currAsset.tokenId in asset_dict){
+        asset_dict[currAsset.tokenId] += currAsset.amount;
+      }
+      else{
+        asset_dict[currAsset.tokenId] = currAsset.amount;
+      }
+    }
   }
 
-  const allAssets = boxes
-    |> flatMap((box) => box.assets);
-
-  const allTokensIds = allAssets
-    |> map((asset) => asset.tokenId)
-    |> uniq;
-
-  const initialValue = allTokensIds
-    |> reduce((acc, asset) => ({ ...acc, [asset]: { tokenId: asset, amount: 0 } }), {});
-
-  const assets = allAssets
-    |> reduce((acc, { tokenId, amount }) => ({
-      ...acc,
-      [tokenId]: { tokenId, amount: acc[tokenId].amount + amount },
-    }), initialValue)
-    |> Object.values;
-
-  return assets;
+  return Object.entries(asset_dict).map(x => ({'tokenId': x[0], 'amount': x[1]}));
 };
 
 export const getCurrentHeight = async (testNet = false) => {
