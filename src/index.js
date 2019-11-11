@@ -413,33 +413,28 @@ export const sendTransaction = async (
  * @param  {String} recipient
  * @param  {Number} amount
  * @param  {Number} fee
- * @param  {Array[String] || String} sk
+ * @param  {Array[String] || String} skIn
  * @param  {Boolean} testNet
  */
 
-export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = false) => {
+export const sendWithoutBoxId = async (recipient, amount, fee, skIn, testNet = false) => {
   if (
     is.not.string(recipient)
     || is.not.number(amount)
     || is.not.number(fee)
-    || (is.not.array(sk) && is.not.string(sk))
-    || (is.array(sk) && is.empty(sk))
+    || (is.not.array(skIn) && is.not.string(skIn))
+    || (is.array(skIn) && is.empty(skIn))
   ) {
     throw new TypeError('Bad params');
   }
 
-  let chargeAddress; let resolveBoxes;
-
-  if (is.array(sk)) {
-    chargeAddress = addressFromSK(sk[0], testNet);
-    resolveBoxes = await getBoxesFromFewSks(sk, amount, fee, testNet);
-  } else {
-    chargeAddress = addressFromSK(sk, testNet);
-    const addressBoxes = await getBoxesFromAddress(chargeAddress, testNet);
-    const boxesWithSk = importSkIntoBoxes(addressBoxes, sk);
-
-    resolveBoxes = getSolvingBoxes(boxesWithSk, amount, fee);
+  let sk = skIn;
+  if (!is.array(sk)) {
+    sk = [skIn];
   }
+
+  const chargeAddress = addressFromSK(sk[0], testNet);
+  const resolveBoxes = await getBoxesFromFewSks(sk, amount, fee, testNet);
 
   if (resolveBoxes === null) {
     throw new Error('Insufficient funds');
