@@ -99,6 +99,53 @@ describe('getBoxesFromAddress test', () => {
 
     expect(res).toEqual([{ id: '1', value: 500 }, { id: '2', value: 500 }]);
   });
+
+  it('should return boxes with assets and registers', async () => {
+    const address = '9fRusAarL1KkrWQVsxSRVYnvWxaAT2A96cKtNn9tvPh5XUyCisr';
+    // example from https://api.ergoplatform.com/transactions/boxes/byAddress/unspent/9fRusAarL1KkrWQVsxSRVYnvWxaAT2A96cKtNn9tvPh5XUyCisr
+    const complexBoxes = [
+      {
+        id: 'f539866d20a065c44838b4b14271dce54ebfe3a2f58adeac4bc31f992499eca8',
+        value: 100000,
+        creationHeight: 93710,
+        ergoTree: '0008cd0278011ec0cf5feb92d61adb51dcb75876627ace6fd9446ab4cabc5313ab7b39a7',
+        address: '9fRusAarL1KkrWQVsxSRVYnvWxaAT2A96cKtNn9tvPh5XUyCisr',
+        assets: [{
+          tokenId: 'c402cee951b3f0f1efcfd6b9328db14b1212845efffbfa8cd1ab48479992d16a',
+          amount: 1,
+        }],
+        additionalRegisters: { R4: '05a0a5e005' },
+        spentTransactionId: null,
+        mainChain: true,
+      },
+      {
+        id: 'ec2ee5e20af7ab2707d5f5dcb38fc1c25c04e53c856ac696404604a6bc75a2b9',
+        value: 1820400000,
+        creationHeight: 93710,
+        ergoTree: '0008cd0278011ec0cf5feb92d61adb51dcb75876627ace6fd9446ab4cabc5313ab7b39a7',
+        address: '9fRusAarL1KkrWQVsxSRVYnvWxaAT2A96cKtNn9tvPh5XUyCisr',
+        assets: [{
+          tokenId: '25a8a319bd86f49795353fa04c58f71468f67698324f31d7d57aba53a3631d4b',
+          amount: 1,
+        }, {
+          tokenId: 'a37be9cb4db539e6c412f7a570380134cfe4d9a5bb3a91a66d10b7445cf4ab09',
+          amount: 1,
+        }, {
+          tokenId: '293ccfeb51821898c8f3fd2c258e77e764240b986a4cc524ca0f03ded5e2ac88',
+          amount: 1,
+        }],
+        additionalRegisters: {},
+        spentTransactionId: null,
+        mainChain: true,
+      },
+    ];
+    const mock = new MockAdapter(testNetServer);
+    mock.onGet(`/transactions/boxes/byAddress/unspent/${address}`)
+      .reply(200, complexBoxes);
+    const res = await getBoxesFromAddress(address, true);
+
+    expect(res).toEqual(complexBoxes);
+  });
 });
 
 describe('getSolvingBoxes test', () => {
