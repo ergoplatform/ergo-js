@@ -18,9 +18,9 @@ export const outputBytes = (out, tokenIds) => {
   res = Buffer.concat([res, intToVlq(out.creationHeight)]);
 
   res = Buffer.concat([res, intToVlq(out.assets.length)]);
-  for (let i=0; i < out.assets.length; i+=1){
-    let t = out.assets[i].tokenId;
-    let n = tokenIds.indexOf(t);
+  for (let i = 0; i < out.assets.length; i += 1) {
+    const t = out.assets[i].tokenId;
+    const n = tokenIds.indexOf(t);
     res = Buffer.concat([res, intToVlq(n)]);
     res = Buffer.concat([res, intToVlq(out.assets[i].amount)]);
   }
@@ -47,13 +47,13 @@ export const inputBytes = (i) => {
 };
 
 export const distinctTokenList = (outputs) => {
-  let tokenList = outputs.map((x) => x.assets.map(a => a.tokenId));
-  let flatTokenList = tokenList.flat();
-  let seenTokens = new Set();
-  let res = [];
-  for( let i=0; i < flatTokenList.length; i += 1){
-    let currId = flatTokenList[i];
-    if(!(currId in seenTokens)){
+  const tokenList = outputs.map((x) => x.assets.map((a) => a.tokenId));
+  const flatTokenList = tokenList.flat();
+  const seenTokens = new Set();
+  const res = [];
+  for (let i = 0; i < flatTokenList.length; i += 1) {
+    const currId = flatTokenList[i];
+    if (!(currId in seenTokens)) {
       res.push(currId);
       seenTokens.add(currId);
     }

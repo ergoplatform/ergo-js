@@ -23,21 +23,20 @@ export const getAssetsFromBoxes = (boxes) => {
     throw new TypeError('Bad params');
   }
 
-  let asset_dict = new Object();
-  for (let i = 0; i < boxes.length; i += 1){
-    for(let j = 0; j < boxes[i].assets.length; j += 1){
-      let currAsset = boxes[i].assets[j];
+  const assetDict = {};
+  for (let i = 0; i < boxes.length; i += 1) {
+    for (let j = 0; j < boxes[i].assets.length; j += 1) {
+      const currAsset = boxes[i].assets[j];
 
-      if(currAsset.tokenId in asset_dict){
-        asset_dict[currAsset.tokenId] += currAsset.amount;
-      }
-      else{
-        asset_dict[currAsset.tokenId] = currAsset.amount;
+      if (currAsset.tokenId in assetDict) {
+        assetDict[currAsset.tokenId] += currAsset.amount;
+      } else {
+        assetDict[currAsset.tokenId] = currAsset.amount;
       }
     }
   }
 
-  return Object.entries(asset_dict).map(x => ({'tokenId': x[0], 'amount': x[1]}));
+  return Object.entries(assetDict).map((x) => ({ tokenId: x[0], amount: x[1] }));
 };
 
 export const getCurrentHeight = async (testNet = false) => {
@@ -371,7 +370,7 @@ export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddr
  */
 
 export const sendTransaction = async (
-  recipient, amount, fee, boxesToSpend, chargeAddress, height, testNet = false
+  recipient, amount, fee, boxesToSpend, chargeAddress, height, testNet = false,
 ) => {
   if (
     is.not.string(recipient)
@@ -385,7 +384,7 @@ export const sendTransaction = async (
   }
 
   const signedTransaction = formTransaction(
-    recipient, amount, fee, boxesToSpend, chargeAddress, height
+    recipient, amount, fee, boxesToSpend, chargeAddress, height,
   );
 
   const server = testNet ? testNetServer : mainNetServer;
