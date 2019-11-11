@@ -144,11 +144,42 @@ export const pkFromAddress = (ergoAdress) => {
   if (
     is.not.string(ergoAdress)
   ) {
-    throw new TypeError('Bad params');
+    throw new TypeError(`Bad params: ${ergoAdress}`);
   }
 
   const addrBytes = bs58.decode(ergoAdress);
   return addrBytes.slice(1, 34);
+};
+
+/**
+ *
+ * @param {String} address
+ * @returns {boolean}
+ */
+export const checkAddressValidity = (address) => {
+  try {
+    const bytes = bs58.decode(address);
+    const size = bytes.length;
+    const script = bytes.slice(0, size - 4);
+    const checksum = bytes.slice(size - 4, size);
+    const calculatedChecksum = Buffer.from(blake.blake2b(script, null, 32), 'hex').slice(0, 4);
+    return calculatedChecksum.toString('hex') === checksum.toString('hex');
+  } catch (e) {
+    return false;
+  }
+};
+
+/**
+ *
+ * @param {String} address
+ * @returns {String}
+ */
+export const ergoTreeFromAddress = (address) => {
+  if (!checkAddressValidity(address)) {
+    throw new TypeError(`Bad params:${address}`);
+  }
+  return Buffer.concat([Buffer.from([0x00, 0x08, 0xcd]), pkFromAddress(address)])
+    .toString('hex');
 };
 
 export const addressFromPK = (pk, testNet = false) => {
@@ -164,19 +195,6 @@ export const addressFromPK = (pk, testNet = false) => {
   const address = Buffer.concat([prefixByte, contentBytes, checksum]).slice(0, 38);
 
   return bs58.encode(address);
-};
-
-export const checkAddressValidity = (address) => {
-  try {
-    const bytes = bs58.decode(address);
-    const size = bytes.length;
-    const script = bytes.slice(0, size - 4);
-    const checksum = bytes.slice(size - 4, size);
-    const calculatedChecksum = Buffer.from(blake.blake2b(script, null, 32), 'hex').slice(0, 4);
-    return calculatedChecksum.toString('hex') === checksum.toString('hex');
-  } catch (e) {
-    return false;
-  }
 };
 
 /**
@@ -197,6 +215,8 @@ export const addressFromSK = (sk, testNet = false) => {
 };
 
 /**
+ * TODO: check that it correctly get boxes from multiple addresses
+ *
  * @param  {Array[string]} sks
  * @param  {Number} amount
  * @param  {Number} fee
@@ -231,41 +251,30 @@ export const getBoxesFromFewSks = async (sks, amount, fee, testNet = false) => {
 };
 
 /**
- * A method that creates outputs
+ * A method that create charge output
  *
- * @param  {String} recipient
- * @param  {Number} amount
- * @param  {Number} fee
- * @param  {Array} boxesToSpend
- * @param  {String} chargeAddress
+ * @param {Array} meaningfulOutputs
+ * @param {Array} boxesToSpend
+ * @param {String} chargeAddress
+ * @param {Number} height
+ * @returns {Array}
  */
-
-export const createOutputs = (recipient, amount, fee, boxesToSpend, chargeAddress) => {
-  if (
-    is.not.string(recipient)
-    || is.not.number(amount)
-    || is.not.number(fee)
-    || is.not.array(boxesToSpend)
-    || is.not.string(chargeAddress)
-  ) {
-    throw new TypeError('Bad params');
-  }
-
-  const globalValue = boxesToSpend.reduce((sum, { value }) => sum + value, 0);
+export const createChargeOutputs = (meaningfulOutputs, boxesToSpend, chargeAddress, height) => {
   const boxAssets = getAssetsFromBoxes(boxesToSpend);
-  const chargeAmount = globalValue - amount - fee;
-  const outputs = [];
-  outputs.push({
-    address: recipient,
-    amount,
-    assets: [],
-  });
 
+  const totalValueIn = boxesToSpend.reduce((sum, { value }) => sum + value, 0);
+  const totalValueOut = meaningfulOutputs.reduce((sum, { value }) => sum + value, 0);
+  const outputs = [];
+
+  const chargeAmount = totalValueIn - totalValueOut;
   if (chargeAmount > 0) {
     outputs.push({
       address: chargeAddress,
-      amount: globalValue - amount - fee,
+      ergoTree: ergoTreeFromAddress(chargeAddress),
+      value: chargeAmount,
       assets: boxAssets,
+      creationHeight: height,
+      additionalRegisters: {},
     });
   } else if (chargeAmount < 0 || boxAssets.length > 0) {
     throw new Error('Not enough ERGS');
@@ -274,19 +283,68 @@ export const createOutputs = (recipient, amount, fee, boxesToSpend, chargeAddres
   return outputs;
 };
 
+
+/**
+ * A method that creates outputs
+ *
+ * @param  {String} recipient
+ * @param  {Number} amount
+ * @param  {Number} fee
+ * @param  {Array} boxesToSpend
+ * @param  {String} chargeAddress
+ * @param  {Number} height
+ */
+
+export const createOutputs = (recipient, amount, fee, boxesToSpend, chargeAddress, height) => {
+  if (
+    is.not.string(recipient)
+    || is.not.number(amount)
+    || is.not.number(fee)
+    || is.not.number(height)
+    || is.not.array(boxesToSpend)
+    || is.not.string(chargeAddress)
+  ) {
+    throw new TypeError('Bad params');
+  }
+
+  const outputs = [];
+  outputs.push({
+    address: recipient,
+    ergoTree: ergoTreeFromAddress(recipient),
+    value: amount,
+    creationHeight: height,
+    assets: [],
+    additionalRegisters: {},
+  });
+
+  if (fee !== null && fee !== undefined && fee > 0) {
+    outputs.push({
+      address: constants.feeAddress,
+      ergoTree: constants.feeErgoTree,
+      value: fee,
+      creationHeight: height,
+      assets: [],
+      additionalRegisters: {},
+    });
+  }
+
+  const chargeOutputs = createChargeOutputs(outputs, boxesToSpend, chargeAddress, height);
+  chargeOutputs.forEach((o) => outputs.push(o));
+
+  return outputs;
+};
+
 /**
  * @param  {Array} boxesToSpend
  * @param  {Array} outputs
  * @param  {Number} fee
- * @param  {Number} height
  */
 
-export const createTransaction = (boxesToSpend, outputs, fee, height) => {
+export const createTransaction = (boxesToSpend, outputs, fee) => {
   if (
     is.not.array(boxesToSpend)
     || is.not.array(outputs)
     || is.not.number(fee)
-    || is.not.number(height)
   ) {
     throw new TypeError('Bad params');
   }
@@ -297,30 +355,7 @@ export const createTransaction = (boxesToSpend, outputs, fee, height) => {
     outputs: [],
   };
 
-  const ergoTreeBytes = Buffer.from([0x00, 0x08, 0xcd]);
-  const minerErgoTree = constants.minerTree;
-
-  Object.values(outputs).forEach(({ address, amount, assets }) => {
-    const tree = Buffer.concat([ergoTreeBytes, pkFromAddress(address)]).toString('hex');
-
-    unsignedTransaction.outputs.push({
-      ergoTree: tree,
-      assets,
-      additionalRegisters: {},
-      value: amount,
-      creationHeight: height,
-    });
-  });
-
-  if (fee !== null && fee !== undefined) {
-    unsignedTransaction.outputs.push({
-      ergoTree: minerErgoTree,
-      assets: [],
-      additionalRegisters: {},
-      value: fee,
-      creationHeight: height,
-    });
-  }
+  outputs.forEach((o) => unsignedTransaction.outputs.push(o));
 
   boxesToSpend.forEach((box) => {
     unsignedTransaction.inputs.push({
@@ -364,7 +399,7 @@ export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddr
     throw new TypeError('Bad params');
   }
 
-  const outputs = createOutputs(recipient, amount, fee, boxesToSpend, chargeAddress);
+  const outputs = createOutputs(recipient, amount, fee, boxesToSpend, chargeAddress, height);
   const signedTransaction = createTransaction(boxesToSpend, outputs, fee, height);
 
   return signedTransaction;

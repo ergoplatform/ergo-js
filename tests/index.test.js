@@ -10,10 +10,11 @@ import {
   sendWithoutBoxId,
   getBoxesFromFewSks,
   createOutputs,
-  getAssetsFromBoxes, checkAddressValidity,
+  getAssetsFromBoxes, checkAddressValidity, ergoTreeFromAddress,
 } from '../src/index';
 import { sign, verify } from '../src/ergoSchnorr';
 import { testNetServer } from '../src/api';
+import constants from '../src/constants';
 
 const testAddress = '3WxxVQqxoVSWEKG5B73eNttBX51ZZ6WXLW7fiVDgCFhzRK8R4gmk';
 const testSK = '8e6993a4999f009c03d9457ffcf8ff3d840ae78332c959c8e806a53fbafbbee1';
@@ -505,9 +506,10 @@ describe('createOutputs test', () => {
   });
 
   it('should return outputs', () => {
-    const recipient = 'adsfko123ads';
-    const chargeAddress = 'asd123sdg';
+    const recipient = complexBoxesAddress;
+    const chargeAddress = testAddress;
     const amount = 123;
+    const height = 1;
     const boxes = [
       {
         id: 1,
@@ -519,24 +521,39 @@ describe('createOutputs test', () => {
     const outputs = [
       {
         address: recipient,
-        amount,
+        ergoTree: ergoTreeFromAddress(recipient),
+        value: amount,
+        creationHeight: height,
         assets: [],
+        additionalRegisters: {},
+      },
+      {
+        address: constants.feeAddress,
+        ergoTree: constants.feeErgoTree,
+        value: 3,
+        creationHeight: height,
+        assets: [],
+        additionalRegisters: {},
       },
       {
         address: chargeAddress,
-        amount: 300,
+        ergoTree: ergoTreeFromAddress(chargeAddress),
+        value: 300,
+        creationHeight: height,
         assets: [],
+        additionalRegisters: {},
       },
     ];
 
-    expect(createOutputs(recipient, amount, 3, boxes, chargeAddress)).toEqual(outputs);
+    expect(createOutputs(recipient, amount, 3, boxes, chargeAddress, height)).toEqual(outputs);
   });
 
   it('should not return charge output if there is no charge', () => {
-    const recipient = 'adsfko123ads';
-    const chargeAddress = 'asd123sdg';
+    const recipient = complexBoxesAddress;
+    const chargeAddress = testAddress;
     const amount = 426;
     const fee = 3;
+    const height = 1;
     const boxes = [
       {
         id: 1,
@@ -546,12 +563,23 @@ describe('createOutputs test', () => {
     ];
     const outputs = [
       {
+        additionalRegisters: {},
         address: recipient,
-        amount,
+        ergoTree: ergoTreeFromAddress(recipient),
+        value: amount,
+        creationHeight: height,
+        assets: [],
+      },
+      {
+        additionalRegisters: {},
+        address: constants.feeAddress,
+        ergoTree: constants.feeErgoTree,
+        value: fee,
+        creationHeight: height,
         assets: [],
       },
     ];
-    expect(createOutputs(recipient, amount, fee, boxes, chargeAddress)).toEqual(outputs);
+    expect(createOutputs(recipient, amount, fee, boxes, chargeAddress, height)).toEqual(outputs);
   });
 });
 describe('getAssetsFromBoxes', () => {
