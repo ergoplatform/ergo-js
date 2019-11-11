@@ -58,15 +58,13 @@ export const getCurrentHeight = async (testNet = false) => {
     method: 'GET',
   });
 
-  const lastBlockHeight = items[0].height;
-
-  return lastBlockHeight;
+  return items[0].height;
 };
 
 /**
- * @param  {string} address
+ * @param {string} address
+ * @param {boolean} testNet
  */
-
 export const getBoxesFromAddress = async (address, testNet = false) => {
   if (is.not.string(address)) {
     throw new TypeError('Bad params');
@@ -79,6 +77,38 @@ export const getBoxesFromAddress = async (address, testNet = false) => {
   });
 
   return data;
+};
+
+/**
+ * @param  {Array} boxes
+ * @param  {Number} value
+ * @param  {Array} assets
+ */
+export const getSolvingBoxesWithAssets = (boxes, value, assets) => {
+  const remains = { ERG: value };
+  assets.forEach((a) => {
+    remains[a.tokenId] = (remains[a.tokenId] || 0) + a.amount;
+  });
+
+  const boxesToSpend = [];
+  const sortedBoxes = sortBoxes(boxes);
+  for (const box of sortedBoxes) {
+    boxesToSpend.push(box);
+    if (remains.ERG > 0) {
+      remains.ERG -= box.value;
+    }
+    box.assets.forEach((a) => {
+      if (remains[a.tokenId] > 0) {
+        remains[a.tokenId] -= box.value;
+      }
+    });
+    const positiveRemainingToken = Object.values(remains).find((o) => o > 0);
+
+    if (positiveRemainingToken === undefined) {
+      return getTenBoxesOrCurrent(boxesToSpend, sortedBoxes);
+    }
+  }
+  return null;
 };
 
 /**
@@ -96,27 +126,7 @@ export const getSolvingBoxes = (boxes, amount, fee) => {
   ) {
     throw new TypeError('Bad params');
   }
-
-  let boxesCollValue = 0;
-  const boxesColl = [];
-  let hasBoxes = false;
-  const sortedBoxes = sortBoxes(boxes);
-
-  for (const box of sortedBoxes) {
-    boxesCollValue += box.value;
-    boxesColl.push(box);
-
-    if (boxesCollValue >= amount + fee) {
-      hasBoxes = true;
-      break;
-    }
-  }
-
-  if (!hasBoxes) {
-    return null;
-  }
-
-  return getTenBoxesOrCurrent(boxesColl, sortedBoxes);
+  return getSolvingBoxesWithAssets(boxes, amount + fee, []);
 };
 
 /**
@@ -133,7 +143,10 @@ export const importSkIntoBoxes = (boxes, sk) => {
     throw new TypeError('Bad params');
   }
 
-  return boxes.map((box) => ({ ...box, sk }));
+  return boxes.map((box) => ({
+    ...box,
+    sk,
+  }));
 };
 
 /**
@@ -162,7 +175,8 @@ export const checkAddressValidity = (address) => {
     const size = bytes.length;
     const script = bytes.slice(0, size - 4);
     const checksum = bytes.slice(size - 4, size);
-    const calculatedChecksum = Buffer.from(blake.blake2b(script, null, 32), 'hex').slice(0, 4);
+    const calculatedChecksum = Buffer.from(blake.blake2b(script, null, 32), 'hex')
+      .slice(0, 4);
     return calculatedChecksum.toString('hex') === checksum.toString('hex');
   } catch (e) {
     return false;
@@ -186,13 +200,17 @@ export const addressFromPK = (pk, testNet = false) => {
   let NETWORK_TYPE;
   const P2PK_TYPE = 1;
 
-  if (testNet) NETWORK_TYPE = 16;
-  else NETWORK_TYPE = 0;
+  if (testNet) {
+    NETWORK_TYPE = 16;
+  } else {
+    NETWORK_TYPE = 0;
+  }
 
   const prefixByte = Buffer.from([NETWORK_TYPE + P2PK_TYPE]);
   const contentBytes = Buffer.from(pk, 'hex');
   const checksum = Buffer.from(blake.blake2b(Buffer.concat([prefixByte, contentBytes]), null, 32), 'hex');
-  const address = Buffer.concat([prefixByte, contentBytes, checksum]).slice(0, 38);
+  const address = Buffer.concat([prefixByte, contentBytes, checksum])
+    .slice(0, 38);
 
   return bs58.encode(address);
 };
@@ -210,19 +228,29 @@ export const addressFromSK = (sk, testNet = false) => {
     throw new TypeError('Bad params');
   }
 
-  const pk = Buffer.from(curve.g.mul(sk).encodeCompressed());
+  const pk = Buffer.from(curve.g.mul(sk)
+    .encodeCompressed());
   return addressFromPK(pk, testNet);
 };
 
+export const getBoxesFromSks = async (sks, amount, assets, testNet = false) => {
+  let boxes = [];
+  for (const sk of sks) {
+    const address = addressFromSK(sk, testNet);
+    const addressBoxes = await getBoxesFromAddress(address, testNet);
+    const boxesWithSk = importSkIntoBoxes(addressBoxes, sk);
+    boxes = [...boxes, ...boxesWithSk];
+  }
+  return getSolvingBoxesWithAssets(boxes, amount, assets);
+};
+
 /**
- * TODO: check that it correctly get boxes from multiple addresses
  *
  * @param  {Array[string]} sks
  * @param  {Number} amount
  * @param  {Number} fee
  * @param  {Boolean} testNet
  */
-
 export const getBoxesFromFewSks = async (sks, amount, fee, testNet = false) => {
   if (
     is.not.array(sks)
@@ -232,23 +260,9 @@ export const getBoxesFromFewSks = async (sks, amount, fee, testNet = false) => {
   ) {
     throw new TypeError('Bad params');
   }
-
-  let boxes = [];
-  let result = null;
-  for (const sk of sks) {
-    const chargeAddress = addressFromSK(sk, testNet);
-    const addressBoxes = await getBoxesFromAddress(chargeAddress, testNet);
-    const boxesWithSk = importSkIntoBoxes(addressBoxes, sk);
-
-    boxes = [...boxes, ...boxesWithSk];
-    result = getSolvingBoxes(boxes, amount, fee);
-    if (result !== null) {
-      break;
-    }
-  }
-
-  return result;
+  return getBoxesFromSks(sks, amount + fee, [], testNet);
 };
+
 
 /**
  * A method that create charge output
@@ -277,7 +291,7 @@ export const createChargeOutputs = (meaningfulOutputs, boxesToSpend, chargeAddre
       additionalRegisters: {},
     });
   } else if (chargeAmount < 0 || boxAssets.length > 0) {
-    throw new Error('Not enough ERGS');
+    throw new Error('Insufficient funds');
   }
 
   return outputs;
@@ -335,16 +349,15 @@ export const createOutputs = (recipient, amount, fee, boxesToSpend, chargeAddres
 };
 
 /**
+ * Create signed transaction with provided inputs and outputs.
+ *
  * @param  {Array} boxesToSpend
  * @param  {Array} outputs
- * @param  {Number} fee
  */
-
-export const createTransaction = (boxesToSpend, outputs, fee) => {
+export const createTransaction = (boxesToSpend, outputs) => {
   if (
     is.not.array(boxesToSpend)
     || is.not.array(outputs)
-    || is.not.number(fee)
   ) {
     throw new TypeError('Bad params');
   }
@@ -400,9 +413,20 @@ export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddr
   }
 
   const outputs = createOutputs(recipient, amount, fee, boxesToSpend, chargeAddress, height);
-  const signedTransaction = createTransaction(boxesToSpend, outputs, fee, height);
+  const signedTransaction = createTransaction(boxesToSpend, outputs);
 
   return signedTransaction;
+};
+
+export const broadcastTx = async (
+  signedTransaction, testNet = false,
+) => {
+  const server = testNet ? testNetServer : mainNetServer;
+  return server({
+    method: 'POST',
+    url: '/transactions/send',
+    data: signedTransaction,
+  });
 };
 
 /**
@@ -414,9 +438,8 @@ export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddr
  * @param  {Number} height
  * @param  {Boolean} testNet = false
  */
-
 export const sendTransaction = async (
-  recipient, amount, fee, boxesToSpend, chargeAddress, height, testNet = false
+  recipient, amount, fee, boxesToSpend, chargeAddress, height, testNet = false,
 ) => {
   if (
     is.not.string(recipient)
@@ -430,46 +453,37 @@ export const sendTransaction = async (
   }
 
   const signedTransaction = formTransaction(
-    recipient, amount, fee, boxesToSpend, chargeAddress, height
+    recipient, amount, fee, boxesToSpend, chargeAddress, height,
   );
 
-  const server = testNet ? testNetServer : mainNetServer;
-
-  const res = await server({
-    method: 'POST',
-    url: '/transactions/send',
-    data: signedTransaction,
-  });
-
-  return res;
+  return broadcastTx(signedTransaction, testNet);
 };
 
 /**
  * @param  {String} recipient
  * @param  {Number} amount
  * @param  {Number} fee
- * @param  {Array[String] || String} skIn
+ * @param  {Array[String] || String} sk
  * @param  {Boolean} testNet
  */
-
-export const sendWithoutBoxId = async (recipient, amount, fee, skIn, testNet = false) => {
+export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = false) => {
   if (
     is.not.string(recipient)
     || is.not.number(amount)
     || is.not.number(fee)
-    || (is.not.array(skIn) && is.not.string(skIn))
-    || (is.array(skIn) && is.empty(skIn))
+    || (is.not.array(sk) && is.not.string(sk))
+    || (is.array(sk) && is.empty(sk))
   ) {
     throw new TypeError('Bad params');
   }
 
-  let sk = skIn;
-  if (!is.array(sk)) {
-    sk = [skIn];
+  let skArr = sk;
+  if (!is.array(skArr)) {
+    skArr = [sk];
   }
 
-  const chargeAddress = addressFromSK(sk[0], testNet);
-  const resolveBoxes = await getBoxesFromFewSks(sk, amount, fee, testNet);
+  const chargeAddress = addressFromSK(skArr[0], testNet);
+  const resolveBoxes = await getBoxesFromFewSks(skArr, amount, fee, testNet);
 
   if (resolveBoxes === null) {
     throw new Error('Insufficient funds');
@@ -478,4 +492,36 @@ export const sendWithoutBoxId = async (recipient, amount, fee, skIn, testNet = f
   const height = await getCurrentHeight(testNet);
 
   return sendTransaction(recipient, amount, fee, resolveBoxes, chargeAddress, height, testNet);
+};
+
+/**
+ *
+ * @param meaningfulOutputs
+ * @param sk
+ * @param testNet
+ * @returns {Promise<*>}
+ */
+export const sendWithOutputs = async (meaningfulOutputs, sk, testNet = false) => {
+  let skArr = sk;
+  if (!is.array(skArr)) {
+    skArr = [sk];
+  }
+
+  const totalValueOut = meaningfulOutputs.reduce((sum, { value }) => sum + value, 0);
+
+  const assets = getAssetsFromBoxes(meaningfulOutputs);
+  const chargeAddress = addressFromSK(skArr[0], testNet);
+  const boxesToSpend = await getBoxesFromSks(skArr, totalValueOut, assets, testNet);
+  if (boxesToSpend === null) {
+    throw new Error('Insufficient funds');
+  }
+
+  const height = await getCurrentHeight(testNet);
+  const chargeOutputs = createChargeOutputs(meaningfulOutputs, boxesToSpend, chargeAddress, height);
+  const outputs = meaningfulOutputs;
+  chargeOutputs.forEach((o) => outputs.push(o));
+
+  const tx = createTransaction(boxesToSpend, outputs);
+
+  return broadcastTx(tx);
 };

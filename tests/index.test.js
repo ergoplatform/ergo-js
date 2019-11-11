@@ -56,6 +56,7 @@ const complexBoxes = [
     mainChain: true,
   },
 ];
+const formBox = (obj) => ({ ...complexBoxes[0], ...obj });
 
 test('simple address validity test', () => {
   const addresses = [
@@ -132,11 +133,11 @@ describe('getBoxesFromAddress test', () => {
     const mock = new MockAdapter(testNetServer);
     const address = '123';
     mock.onGet(`/transactions/boxes/byAddress/unspent/${address}`)
-      .reply(200, [{ id: '1', value: 500 }, { id: '2', value: 500 }]);
+      .reply(200, [{ id: '1', value: 500 }, { id: '2', value: 500 }].map((o) => formBox(o)));
 
     const res = await getBoxesFromAddress(address, true);
 
-    expect(res).toEqual([{ id: '1', value: 500 }, { id: '2', value: 500 }]);
+    expect(res).toEqual([{ id: '1', value: 500 }, { id: '2', value: 500 }].map((o) => formBox(o)));
   });
 
   it('should return boxes with assets and registers', async () => {
@@ -195,7 +196,7 @@ describe('getSolvingBoxes test', () => {
       id: '11',
       value: 10,
     },
-  ];
+  ].map((o) => formBox(o));
 
   it('should return error with bad params', () => {
     expect(() => getSolvingBoxes(null, 12, 1)).toThrow(TypeError);
@@ -227,7 +228,7 @@ describe('importSkIntoBoxes test', () => {
       id: '3',
       value: '555',
     },
-  ];
+  ].map((o) => formBox(o));
 
   it('should return error with bad params', () => {
     expect(() => importSkIntoBoxes(mockBoxes, 1)).toThrow(TypeError);
@@ -246,7 +247,7 @@ describe('importSkIntoBoxes test', () => {
         value: '555',
         sk: '2',
       },
-    ]);
+    ].map((o) => formBox(o)));
   });
 });
 
@@ -268,14 +269,14 @@ describe('getBoxesFromFewSks test', () => {
     { id: '2', value: 500 },
     { id: '3', value: 500 },
     { id: '4', value: 500 },
-  ];
+  ].map((o) => formBox(o));
 
   const testResolveBoxes = [
     { id: '1', value: 500, sk: '123' },
     { id: '2', value: 500, sk: '123' },
     { id: '3', value: 500, sk: '345' },
     { id: '4', value: 500, sk: '345' },
-  ];
+  ].map((o) => formBox(o));
 
   it('should return error with bad params', async () => {
     let error; let error2; let error3;
@@ -383,7 +384,7 @@ describe('sendWithoutBoxId test', () => {
     const mockTestnetServer = new MockAdapter(testNetServer);
 
     mockTestnetServer.onGet(`/transactions/boxes/byAddress/unspent/${testAddress}`)
-      .reply(200, [{ id: '1', value: 500 }, { id: '2', value: 500 }]);
+      .reply(200, [{ id: '1', value: 500 }, { id: '2', value: 500 }].map((o) => formBox(o)));
 
     const currentHeight = 73319;
     mockTestnetServer.onGet('/blocks?limit=1')
@@ -430,7 +431,7 @@ describe('sendWithoutBoxId test', () => {
       { id: '2', value: 500, assets: [] },
       { id: '3', value: 500, assets: [] },
       { id: '4', value: 500, assets: [] },
-    ];
+    ].map((o) => formBox(o));
 
     const mockTestnetServer = new MockAdapter(testNetServer);
 
@@ -470,7 +471,7 @@ describe('sendWithoutBoxId test', () => {
     const currentHeight = 73319;
 
     mockTestnetServer.onGet(`/transactions/boxes/byAddress/unspent/${testAddress}`)
-      .reply(200, [{ id: '1', value: 500, assets: [] }, { id: '2', value: 500, assets: [] }]);
+      .reply(200, [{ id: '1', value: 500, assets: [] }, { id: '2', value: 500, assets: [] }].map((o) => formBox(o)));
 
     mockTestnetServer.onGet('/blocks?limit=1')
       .reply(200, {
@@ -516,7 +517,7 @@ describe('createOutputs test', () => {
         value: 426,
         assets: [],
       },
-    ];
+    ].map((o) => formBox(o));
 
     const outputs = [
       {
@@ -560,7 +561,7 @@ describe('createOutputs test', () => {
         value: 429,
         assets: [],
       },
-    ];
+    ].map((o) => formBox(o));
     const outputs = [
       {
         additionalRegisters: {},
@@ -611,7 +612,7 @@ describe('getAssetsFromBoxes', () => {
           },
         ],
       },
-    ];
+    ].map((o) => formBox(o));
 
     expect(getAssetsFromBoxes(boxes)).toEqual([
       {
