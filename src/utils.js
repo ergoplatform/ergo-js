@@ -65,7 +65,7 @@ export const distinctTokenList = (outputs) => {
   const res = [];
   for (let i = 0; i < flatTokenList.length; i += 1) {
     const currId = flatTokenList[i];
-    if (!(currId in seenTokens)) {
+    if (!(seenTokens.has(currId))) {
       res.push(currId);
       seenTokens.add(currId);
     }
