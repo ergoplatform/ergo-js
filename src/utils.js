@@ -60,8 +60,7 @@ export const inputBytes = (i) => {
 };
 
 export const distinctTokenList = (outputs) => {
-  const tokenList = outputs.map((x) => x.assets.map((a) => a.tokenId));
-  const flatTokenList = tokenList.flat();
+  const flatTokenList = outputs.flatMap((output) => output.assets.map((asset) => asset.tokenId));
   const seenTokens = new Set();
   const res = [];
   for (let i = 0; i < flatTokenList.length; i += 1) {
