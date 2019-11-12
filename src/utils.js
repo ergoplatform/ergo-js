@@ -12,19 +12,32 @@ export const intToVlq = (num) => {
   return res;
 };
 
-export const outputBytes = (out, tokenIds) => {
-  let res = intToVlq(out.value);
-  res = Buffer.concat([res, Buffer.from(out.ergoTree, 'hex')]);
-  res = Buffer.concat([res, intToVlq(out.creationHeight)]);
+export const outputBytes = (
+  {
+    value,
+    ergoTree,
+    creationHeight,
+    assets,
+    additionalRegisters,
+  },
+  tokenIds,
+) => {
+  let res = intToVlq(value);
+  res = Buffer.concat([res, Buffer.from(ergoTree, 'hex')]);
+  res = Buffer.concat([res, intToVlq(creationHeight)]);
 
-  res = Buffer.concat([res, intToVlq(out.assets.length)]);
-  for (let i = 0; i < out.assets.length; i += 1) {
-    const t = out.assets[i].tokenId;
-    const n = tokenIds.indexOf(t);
-    res = Buffer.concat([res, intToVlq(n)]);
-    res = Buffer.concat([res, intToVlq(out.assets[i].amount)]);
+  res = Buffer.concat([res, intToVlq(assets.length)]);
+  for (let i = 0; i < assets.length; i += 1) {
+    const assetId = assets[i].tokenId;
+    const assetIndex = tokenIds.indexOf(assetId);
+    if (assetIndex === -1) {
+      res = Buffer.concat([res, Buffer.from(assetId, 'hex')]);
+    } else {
+      res = Buffer.concat([res, intToVlq(assetIndex)]);
+      res = Buffer.concat([res, intToVlq(assets[i].amount)]);
+    }
   }
-  const k = out.additionalRegisters.length;
+  const k = additionalRegisters.length;
   res = Buffer.concat([res, intToVlq(k)]);
   return res;
 };

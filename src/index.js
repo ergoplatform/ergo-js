@@ -26,17 +26,17 @@ export const getAssetsFromBoxes = (boxes) => {
   const assetDict = {};
   for (let i = 0; i < boxes.length; i += 1) {
     for (let j = 0; j < boxes[i].assets.length; j += 1) {
-      const currAsset = boxes[i].assets[j];
+      const { tokenId, amount } = boxes[i].assets[j];
 
-      if (currAsset.tokenId in assetDict) {
-        assetDict[currAsset.tokenId] += currAsset.amount;
+      if (tokenId in assetDict) {
+        assetDict[tokenId] += amount;
       } else {
-        assetDict[currAsset.tokenId] = currAsset.amount;
+        assetDict[tokenId] = amount;
       }
     }
   }
 
-  return Object.entries(assetDict).map((x) => ({ tokenId: x[0], amount: x[1] }));
+  return Object.entries(assetDict).map(([tokenId, amount]) => ({ tokenId, amount }));
 };
 
 export const getCurrentHeight = async (testNet = false) => {
