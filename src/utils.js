@@ -12,13 +12,32 @@ export const intToVlq = (num) => {
   return res;
 };
 
-export const outputBytes = (out) => {
-  let res = intToVlq(out.value);
-  res = Buffer.concat([res, Buffer.from(out.ergoTree, 'hex')]);
-  res = Buffer.concat([res, intToVlq(out.creationHeight)]);
+export const outputBytes = (
+  {
+    value,
+    ergoTree,
+    creationHeight,
+    assets,
+    additionalRegisters,
+  },
+  tokenIds,
+) => {
+  let res = intToVlq(value);
+  res = Buffer.concat([res, Buffer.from(ergoTree, 'hex')]);
+  res = Buffer.concat([res, intToVlq(creationHeight)]);
 
-  res = Buffer.concat([res, intToVlq(out.assets.length)]);
-  const k = out.additionalRegisters.length;
+  res = Buffer.concat([res, intToVlq(assets.length)]);
+  for (let i = 0; i < assets.length; i += 1) {
+    const assetId = assets[i].tokenId;
+    const assetIndex = tokenIds.indexOf(assetId);
+    if (assetIndex === -1) {
+      res = Buffer.concat([res, Buffer.from(assetId, 'hex')]);
+    } else {
+      res = Buffer.concat([res, intToVlq(assetIndex)]);
+      res = Buffer.concat([res, intToVlq(assets[i].amount)]);
+    }
+  }
+  const k = additionalRegisters.length;
   res = Buffer.concat([res, intToVlq(k)]);
   return res;
 };
@@ -40,7 +59,19 @@ export const inputBytes = (i) => {
   return res;
 };
 
-export const distinctTokenList = () => []; // TODO: rework this
+export const distinctTokenList = (outputs) => {
+  const flatTokenList = outputs.flatMap((output) => output.assets.map((asset) => asset.tokenId));
+  const seenTokens = new Set();
+  const res = [];
+  for (let i = 0; i < flatTokenList.length; i += 1) {
+    const currId = flatTokenList[i];
+    if (!(seenTokens.has(currId))) {
+      res.push(currId);
+      seenTokens.add(currId);
+    }
+  }
+  return res;
+};
 
 export const sortBoxes = (boxes) => {
   const sortableKeys = Object.keys(boxes).sort((a, b) => boxes[b].value - boxes[a].value);
@@ -80,7 +111,7 @@ export const serializeTx = (tx) => {
 
   res = Buffer.concat([res, intToVlq(tx.outputs.length)]);
   Object.values(tx.outputs).forEach((v) => {
-    res = Buffer.concat([res, outputBytes(v)]);
+    res = Buffer.concat([res, outputBytes(v, distinctIds)]);
   });
 
   return res;
