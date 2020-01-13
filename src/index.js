@@ -2,9 +2,6 @@ import BN from 'bn.js';
 import blake from 'blakejs';
 import bs58 from 'bs58';
 import { ec } from 'elliptic';
-import {
-  uniq, flatMap, map, reduce, isEmpty,
-} from 'lodash/fp';
 import is from 'is_js';
 import constants from './constants';
 import { serializeTx, sortBoxes, getTenBoxesOrCurrent } from './utils';
@@ -26,28 +23,20 @@ export const getAssetsFromBoxes = (boxes) => {
     throw new TypeError('Bad params');
   }
 
-  if (isEmpty(boxes)) {
-    return [];
+  const assetDict = {};
+  for (let i = 0; i < boxes.length; i += 1) {
+    for (let j = 0; j < boxes[i].assets.length; j += 1) {
+      const { tokenId, amount } = boxes[i].assets[j];
+
+      if (tokenId in assetDict) {
+        assetDict[tokenId] += amount;
+      } else {
+        assetDict[tokenId] = amount;
+      }
+    }
   }
 
-  const allAssets = boxes
-    |> flatMap((box) => box.assets);
-
-  const allTokensIds = allAssets
-    |> map((asset) => asset.tokenId)
-    |> uniq;
-
-  const initialValue = allTokensIds
-    |> reduce((acc, asset) => ({ ...acc, [asset]: { tokenId: asset, amount: 0 } }), {});
-
-  const assets = allAssets
-    |> reduce((acc, { tokenId, amount }) => ({
-      ...acc,
-      [tokenId]: { tokenId, amount: acc[tokenId].amount + amount },
-    }), initialValue)
-    |> Object.values;
-
-  return assets;
+  return Object.entries(assetDict).map(([tokenId, amount]) => ({ tokenId, amount }));
 };
 
 export const getCurrentHeight = async (testNet = false) => {
@@ -381,7 +370,7 @@ export const formTransaction = (recipient, amount, fee, boxesToSpend, chargeAddr
  */
 
 export const sendTransaction = async (
-  recipient, amount, fee, boxesToSpend, chargeAddress, height, testNet = false
+  recipient, amount, fee, boxesToSpend, chargeAddress, height, testNet = false,
 ) => {
   if (
     is.not.string(recipient)
@@ -395,7 +384,7 @@ export const sendTransaction = async (
   }
 
   const signedTransaction = formTransaction(
-    recipient, amount, fee, boxesToSpend, chargeAddress, height
+    recipient, amount, fee, boxesToSpend, chargeAddress, height,
   );
 
   const server = testNet ? testNetServer : mainNetServer;
