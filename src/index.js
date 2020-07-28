@@ -446,6 +446,7 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = fal
  *
  * @param {Buffer} bytes
  * @param {Buffer} sk
+ * @returns {Buffer} signature
  */
 export const signMsg = (bytes, sk) => {
   const secret = new BN(sk);
