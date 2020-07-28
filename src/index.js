@@ -8,6 +8,8 @@ import { serializeTx, sortBoxes, getTenBoxesOrCurrent } from './utils';
 import { sign } from './ergoSchnorr';
 import { testNetServer, mainNetServer } from './api';
 
+export { verify } from './ergoSchnorr';
+
 const { curve } = ec('secp256k1');
 
 /**
@@ -437,4 +439,15 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = fal
   const height = await getCurrentHeight(testNet);
 
   return sendTransaction(recipient, amount, fee, resolveBoxes, chargeAddress, height, testNet);
+};
+
+/**
+ * Sign message by secret key
+ *
+ * @param {Buffer} bytes
+ * @param {Buffer} sk
+ */
+export const signMsg = (bytes, sk) => {
+  const secret = new BN(sk);
+  return sign(bytes, secret);
 };
