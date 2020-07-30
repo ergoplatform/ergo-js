@@ -1,5 +1,4 @@
 module.exports = {
-  browser: true,
   moduleFileExtensions: ['js', 'json'],
   transform: {
     '^.+\\.(js|jsx)?$': 'babel-jest',
@@ -7,9 +6,6 @@ module.exports = {
   transformIgnorePatterns: [
     '/node_modules/', './dist/',
   ],
-  globals: {
-    window: true,
-  },
   coverageDirectory: './coverage/',
   collectCoverage: true,
 };

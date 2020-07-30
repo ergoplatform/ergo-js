@@ -15,7 +15,8 @@
     "bs58": "^4.0.1",
     "elliptic": "^6.5.2",
     "is_js": "^0.9.0",
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.11",
+    "randombytes": "2.1.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.0",
@@ -62,7 +63,7 @@
     "size": "npm run build && size-limit",
     "styleFix": "npx eslint -c .eslintrc.yml ./src ./tests --fix"
   },
-  "author": "Ergoplatform",
+  "author": "Ergo Platform",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ergoplatform/ergo-js/issues"

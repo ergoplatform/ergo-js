@@ -31,6 +31,7 @@ const buildFile = {
 
 const npmFile = {
   entry: './src/index.js',
+  target: 'node',
   devtool: 'source-map',
   output: {
     path: path.resolve(__dirname, './'),

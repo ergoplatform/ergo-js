@@ -1,10 +1,10 @@
 import BN from 'bn.js';
 import { ec } from 'elliptic';
-import crypto from 'crypto';
 import blake from 'blakejs';
 
-const rand = crypto.randomBytes;
 const { curve } = ec('secp256k1');
+
+const randomBytes = require('randombytes');
 
 const numHash = (s) => {
   const KEY = null;
@@ -22,7 +22,7 @@ const genCommitment = (pk, w) => {
 };
 
 const tryToSign = (msgBytes, sk) => {
-  const y = new BN(rand(32)).umod(curve.n);
+  const y = new BN(randomBytes(32)).umod(curve.n);
 
   // crucial: y has to remain secret and be removed ASAP
   // it also should come from a good entropy source

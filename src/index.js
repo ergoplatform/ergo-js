@@ -259,7 +259,7 @@ export const createOutputs = (recipient, amount, fee, boxesToSpend, chargeAddres
       assets: boxAssets,
     });
   } else if (chargeAmount < 0 || boxAssets.length > 0) {
-    throw new Error('Not enough ERGS');
+    throw new Error('Not enough ERG');
   }
 
   return outputs;
@@ -448,6 +448,7 @@ export const sendWithoutBoxId = async (recipient, amount, fee, sk, testNet = fal
  * @param {Buffer} sk
  * @returns {Buffer} signature
  */
+
 export const signMsg = (bytes, sk) => {
   const secret = new BN(sk);
   return sign(bytes, secret);
